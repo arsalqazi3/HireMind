@@ -1,0 +1,9 @@
+torch
+transformers
+peft
+sentence-transformers
+faiss-cpu
+pandas
+scikit-learn
+pypdf
+streamlit
