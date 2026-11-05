@@ -109,6 +109,7 @@ def test_clean_jobs_end_to_end(tmp_path):
     cook = jobs[jobs["job_id"] == 1].iloc[0]
     assert cook["industries"] == "Restaurants"
     assert cook["functions"] == "Management"
+    assert pd.isna(cook["skills"]) or cook["skills"] == ""  # the fake description names no skills
     assert cook["level"] == "Entry level"
 
 

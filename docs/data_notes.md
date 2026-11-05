@@ -49,7 +49,22 @@ These are rough checks. A low "opening text" share does not prove a label is wro
 
 **What this means:** `skill_overlap`, the Critic's rule score and the relevance definition all need real skills, and the dataset does not provide them. They have to come from the description text.
 
-Suggested approach: build one fixed skill list and match it in both resumes and job descriptions, so both sides use the same words. This has not been built or tested yet.
+### The skill list
+
+`hiremind/skills.csv` is a fixed list of 418 skills, matched the same way in resumes and job descriptions by `hiremind/skills.py`, so both sides use the same names. `jobs.csv` has the result in its `skills` column.
+
+- **How it was built:** terms were chosen by hand, using candidates mined from the job pool and the training resumes only. Validation and test resumes were not used.
+- **What it leaves out:** soft skills like "communication", because nearly every job asks for them and they would not help tell jobs apart.
+- **Boilerplate:** single words like "recruiting" and "counseling" matched benefits and hiring text, such as "free counseling through our Employee Assistance Program". Those skills now use longer phrases. This means some real mentions are missed, for example a resume that just lists "Recruitment".
+
+How well it works, on training resumes and the job pool:
+
+- **Matching jobs score higher.** Average skill overlap is 0.19 for a resume and a job in the same category, and 0.08 for different categories.
+- **Some categories do not separate.** ARTS (0.06 same, 0.08 other), AGRICULTURE (0.06, 0.06), AUTOMOBILE (0.08, 0.07) and ADVOCATE (0.10, 0.09) show little or no difference. Noisy resume labels are a likely cause, but this was not tested. The strongest are CHEF (0.43, 0.06) and ACCOUNTANT (0.37, 0.08).
+- **Job descriptions name few skills.** The median job has 4, 29.7% have fewer than 3 and 4.4% have none. TEACHER is the weakest, with about 60% under 3. Only 3.4% of resumes have fewer than 3.
+- **Precision is good but not perfect.** Reading 60 sampled job matches, 53 were clearly right, 4 were weak (the skill was in a company description) and 3 were wrong. One of the 3, "garments", has since been fixed. Of 40 resume matches, 39 were right. This is one reader's judgement on a small sample.
+
+Because of the limits above, skill overlap should not be the only signal in the Critic's rule score or the relevance check. Combine it with category and level, as the proposal already plans.
 
 ### Experience level
 
@@ -61,5 +76,5 @@ Of the postings with no level, 56% have a level word in the title or a number of
 
 1. **Test resumes for matching.** Hand-check the category of the 100 test resumes used for matching, and replace or relabel those that are clearly wrong? Recommended, otherwise label errors count against the agent. The Parser's category accuracy should still use the dataset labels, as the proposal says.
 2. **Small categories.** Keep all 24 as the proposal says, and report per-category results so BPO and AUTOMOBILE do not hide behind the average? Recommended.
-3. **Skill list.** Agree on building the shared skill list described above.
+3. **Skill list.** Review `hiremind/skills.csv` and add anything missing for your fields.
 4. **Job mapping.** Review the rules in `docs/category_mapping.md`, especially ADVOCATE and BPO.

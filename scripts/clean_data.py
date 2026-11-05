@@ -17,6 +17,7 @@ from pathlib import Path
 import pandas as pd
 
 from hiremind import config
+from hiremind.skills import extract_skills
 
 MIN_WORDS = 50
 
@@ -113,8 +114,9 @@ def clean_jobs(raw_dir: Path = config.RAW_DIR, size: int = config.JOB_POOL_SIZE)
     """Join postings with their functions and industries, map categories, dedupe, balance.
 
     List columns are joined with "|" because the industry names contain commas.
-    `functions` is LinkedIn's "skills" table, which holds broad job functions and
-    not real skills (see docs/data_notes.md). `level` is empty when LinkedIn has none.
+    `skills` comes from the description, using hiremind/skills.csv. `functions` is
+    LinkedIn's "skills" table, which holds broad job functions and not real skills
+    (see docs/data_notes.md). `level` is empty when LinkedIn has none.
     """
     raw = Path(raw_dir) / "linkedin-job-postings"
     columns = ["job_id", "title", "company_name", "location", "description", "formatted_experience_level", "formatted_work_type"]
@@ -139,7 +141,8 @@ def clean_jobs(raw_dir: Path = config.RAW_DIR, size: int = config.JOB_POOL_SIZE)
 
     print(f"postings after cleaning: {len(df)}, mapped to a category: {len(mapped)}")
     pool = balance(mapped, size)
-    columns = ["job_id", "title", "company", "location", "category", "level", "work_type", "industries", "functions", "description"]
+    pool = pool.assign(skills=pool["description"].map(lambda text: "|".join(extract_skills(text))))
+    columns = ["job_id", "title", "company", "location", "category", "level", "work_type", "skills", "industries", "functions", "description"]
     return pool[columns].sort_values(["category", "job_id"]).reset_index(drop=True)
 
 
