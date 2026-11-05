@@ -40,8 +40,8 @@ These are rough checks. A low "opening text" share does not prove a label is wro
 ## Job postings (LinkedIn)
 
 - 123,849 postings, not "more than 124,000" as the proposal says. Use the real number in the report.
-- 106,596 remain after dropping descriptions under 50 words and duplicate descriptions.
-- `docs/category_mapping.md` maps 53,956 of these to a category and picks a pool of 10,016.
+- 106,362 remain after dropping descriptions under 50 words and duplicate descriptions.
+- `docs/category_mapping.md` maps 53,841 of these to a category and picks a pool of 10,013.
 
 ### "Skills" are not real skills
 
@@ -53,7 +53,7 @@ Suggested approach: build one fixed skill list and match it in both resumes and 
 
 ### Experience level
 
-`formatted_experience_level` is missing for 24.9% of postings after cleaning. Known values are Internship, Entry level, Associate, Mid-Senior level, Director and Executive.
+`formatted_experience_level` is missing for 25.0% of postings after cleaning, and for 26.8% of the job pool (2,684 of 10,013). `jobs.csv` leaves these empty for now. Known values are Internship, Entry level, Associate, Mid-Senior level, Director and Executive.
 
 Of the postings with no level, 56% have a level word in the title or a number of years in the description. That could fill most gaps and leave about 11% unknown. The pattern is rough and its accuracy has not been checked. A mention of years may not be an experience requirement.
 

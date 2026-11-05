@@ -1,12 +1,12 @@
 # Job to resume category mapping
 
-Status: draft for team review. `scripts/clean_data.py` (`map_job_category`) should follow these rules once they are agreed.
+Status: implemented in `scripts/clean_data.py` (`map_job_category`), still open to team review. If a rule changes, change it in both places.
 
 The LinkedIn postings do not use the 24 resume categories, so each posting is mapped with the fixed rules below. The rules were written after reading what each resume category really contains.
 
 ## How a posting is mapped
 
-1. Drop postings with under 50 words of description or a duplicate description. This takes 123,849 postings down to 106,596.
+1. Clean the description whitespace, then drop postings with under 50 words of description or a duplicate description. This takes 123,849 postings down to 106,362.
 2. If the title matches the exclusion list, leave the posting unmapped.
 3. Try the title rules in order. The first match wins, so specific domains come before general ones. For example, "Automotive Sales" is AUTOMOBILE, not SALES.
 4. If no title rule matches, use the industry rule. It only applies to `Retail Apparel and Fashion` jobs whose title also looks like a retail or apparel role.
@@ -27,31 +27,31 @@ Some categories do not mean what their name suggests, because the resume labels 
 
 | Category | Jobs it covers | Jobs found | In pool |
 |---|---|---:|---:|
-| ACCOUNTANT | Accountants, bookkeepers, audit, tax, controllers | 3,704 | 505 |
-| ADVOCATE | Patient, customer and victim advocates, social workers. Not lawyers. | 328 | 328 |
+| ACCOUNTANT | Accountants, bookkeepers, audit, tax, controllers | 3,697 | 505 |
+| ADVOCATE | Patient, customer and victim advocates, social workers. Not lawyers. | 327 | 327 |
 | AGRICULTURE | Farming, agronomy, horticulture, irrigation | 84 | 84 |
 | APPAREL | Fashion, garment, footwear and apparel retail | 376 | 376 |
 | ARTS | Artists, art directors, museums, theatre, photographers | 132 | 132 |
-| AUTOMOBILE | Auto and diesel mechanics, body shops, service advisors | 519 | 505 |
+| AUTOMOBILE | Auto and diesel mechanics, body shops, service advisors | 518 | 505 |
 | AVIATION | Aircraft mechanics, pilots, flight crew, avionics | 159 | 159 |
-| BANKING | Tellers, bankers, loans, mortgages | 1,090 | 505 |
-| BPO | Customer service, call and contact centres | 1,305 | 505 |
-| BUSINESS-DEVELOPMENT | Business development, partnerships | 760 | 505 |
-| CHEF | Chefs, cooks, bakers | 537 | 505 |
-| CONSTRUCTION | Construction, skilled trades, estimators, superintendents | 1,850 | 505 |
-| CONSULTANT | Consultants other than sales and leasing | 1,272 | 505 |
-| DESIGNER | Graphic, UX, interior and technical designers | 1,003 | 505 |
-| DIGITAL-MEDIA | Social media, digital marketing, SEO, video | 551 | 505 |
-| ENGINEERING | Mechanical, electrical, civil and other non-IT engineers | 6,597 | 505 |
-| FINANCE | Financial analysts and advisors, treasury, investment | 2,092 | 505 |
+| BANKING | Tellers, bankers, loans, mortgages | 1,086 | 505 |
+| BPO | Customer service, call and contact centres | 1,301 | 505 |
+| BUSINESS-DEVELOPMENT | Business development, partnerships | 757 | 505 |
+| CHEF | Chefs, cooks, bakers | 535 | 505 |
+| CONSTRUCTION | Construction, skilled trades, estimators, superintendents | 1,845 | 505 |
+| CONSULTANT | Consultants other than sales and leasing | 1,270 | 505 |
+| DESIGNER | Graphic, UX, interior and technical designers | 998 | 505 |
+| DIGITAL-MEDIA | Social media, digital marketing, SEO, video | 550 | 505 |
+| ENGINEERING | Mechanical, electrical, civil and other non-IT engineers | 6,581 | 505 |
+| FINANCE | Financial analysts and advisors, treasury, investment | 2,089 | 505 |
 | FITNESS | Personal trainers, fitness instructors, yoga, gyms | 101 | 101 |
-| HEALTHCARE | Nurses, therapists, physicians, medical staff | 13,200 | 505 |
+| HEALTHCARE | Nurses, therapists, physicians, medical staff | 13,183 | 505 |
 | HR | Human resources, recruiters, talent acquisition | 1,505 | 505 |
-| INFORMATION-TECHNOLOGY | Software, data, networks, IT support, security | 8,511 | 505 |
-| PUBLIC-RELATIONS | Public relations, media relations, communications | 251 | 251 |
-| SALES | Sales staff, account executives and managers, leasing | 7,236 | 505 |
-| TEACHER | Teachers, tutors, professors | 793 | 505 |
-| **Total** | | **53,956** | **10,016** |
+| INFORMATION-TECHNOLOGY | Software, data, networks, IT support, security | 8,503 | 505 |
+| PUBLIC-RELATIONS | Public relations, media relations, communications | 249 | 249 |
+| SALES | Sales staff, account executives and managers, leasing | 7,204 | 505 |
+| TEACHER | Teachers, tutors, professors | 791 | 505 |
+| **Total** | | **53,841** | **10,013** |
 
 "In pool" caps each category at 505, the cap that gets the pool to about 10,000. Seven categories have fewer than 505 jobs and keep all of them, so the pool is not perfectly balanced.
 
