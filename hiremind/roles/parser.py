@@ -3,7 +3,7 @@ import json
 import re
 from pathlib import Path
 
-from hiremind import slm
+from hiremind import config, slm
 from hiremind.schemas import Profile
 from hiremind.skills import extract_skills
 
@@ -29,7 +29,8 @@ def parse(resume_text: str) -> Profile:
     if not resume_text.strip():
         raise ValueError("Resume text is empty")
     prompt = ('Extract a resume profile as JSON with category, years_experience, education, roles and projects. '
-              'Use null for unknown years and arrays of exact resume phrases for education, roles and projects.\nResume:\n' + resume_text)
+              'Use null for unknown years and arrays of exact resume phrases for education, roles and projects.\nResume:\n' + resume_text
+              + '\nChoose the best category from this list only: ' + ', '.join(config.CATEGORIES) + '.')
     for _ in range(2):
         answer = slm.generate("parser", prompt, max_new_tokens=512).strip()
         try:
@@ -37,6 +38,9 @@ def parse(resume_text: str) -> Profile:
             category = data["category"]
             if not isinstance(category, str) or not category.strip():
                 raise ValueError("Invalid category")
+            category = category.strip().upper().replace(" ", "-")
+            if category not in config.CATEGORIES:
+                raise ValueError("Category is outside the supported list")
             fields = {}
             for name in ("education", "roles", "projects"):
                 values = data.get(name, [])
@@ -48,7 +52,7 @@ def parse(resume_text: str) -> Profile:
                 years = None
             elif not re.search(rf"(?<!\d){years:g}\s*(?:\+\s*)?years?\b", resume_text, re.I):
                 years = None
-            return Profile(category=category.strip().upper().replace(" ", "-"), skills=extract_skills(resume_text), years_experience=years, **fields)
+            return Profile(category=category, skills=extract_skills(resume_text), years_experience=years, **fields)
         except (ValueError, KeyError, TypeError, AttributeError):
             prompt += "\nReturn only a valid JSON object with the requested fields."
     raise ValueError("Could not parse a valid resume profile")

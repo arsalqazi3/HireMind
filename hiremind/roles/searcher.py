@@ -87,6 +87,7 @@ def search(memory: Memory) -> list[Job]:
                 result = asdict(tools.get_job_details(job.job_id)) if name == "get_job_details" else {"overlap": tools.skill_overlap(memory.semantic, job)}
             memory.short_term.append(Step(state={}, action=name, args=args, result=result))
         except (ValueError, KeyError) as exc:
-            memory.short_term.append(Step(state={}, action="error", args={}, feedback=str(exc)))
+            action = "stop" if candidates and str(exc) == "Repeated search query" else "error"
+            memory.short_term.append(Step(state={}, action=action, args={}, feedback=str(exc)))
             break
     return candidates

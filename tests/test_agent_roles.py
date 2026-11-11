@@ -19,6 +19,12 @@ def test_parser_discards_unbacked_facts_and_retries(monkeypatch):
     assert "Python" in profile.skills
 
 
+def test_parser_retries_when_category_is_not_supported(monkeypatch):
+    answers = iter(['{"category":"SENIOR ACCOUNTANT"}', '{"category":"ACCOUNTANT"}'])
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: next(answers))
+    assert parser.parse("Accountant with bookkeeping experience.").category == "ACCOUNTANT"
+
+
 def test_critic_rejects_invalid_scores(monkeypatch):
     responses = iter(['{"score":8,"reason":"Relevant skills"}', '{"score":100,"reason":"invalid"}', 'invalid'])
     monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: next(responses))

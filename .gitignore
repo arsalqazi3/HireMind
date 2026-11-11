@@ -21,3 +21,6 @@ models/*
 
 # hand-labelling sheets (hold dataset text, shared on Drive)
 data/labels/
+
+# Local workbook exports may contain dataset text.
+outputs/

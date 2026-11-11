@@ -1,5 +1,6 @@
 """Load and run the local language model on the CPU."""
 import os
+import platform
 from functools import lru_cache
 
 from hiremind import config
@@ -9,11 +10,14 @@ from hiremind import config
 def load(model_dir: str | None = None):
     """Load the tokenizer and model once and keep them for the whole run."""
     os.environ.setdefault("HF_HOME", str(config.MODELS_DIR / "huggingface"))
+    import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     source = model_dir or "Qwen/Qwen3-0.6B"
     tokenizer = AutoTokenizer.from_pretrained(source)
     model = AutoModelForCausalLM.from_pretrained(source).to("cpu").eval()
+    if platform.system() == "Darwin" and platform.machine() == "arm64":
+        torch.set_num_threads(min(4, os.cpu_count() or 1))
     return tokenizer, model
 
 

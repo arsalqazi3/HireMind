@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from scripts.import_relevance_labels import agreement, problems, read_labels
+from scripts.import_relevance_labels import agreement, assignment_problems, problems, read_labels
 
 
 def write_sheet(path, values, notes=None):
@@ -26,6 +26,18 @@ def test_reports_empty_and_invalid_rows(tmp_path):
     path = tmp_path / "a.xlsx"
     write_sheet(path, [1, None, "yes"])
     assert problems(read_labels("a", path)) == ["a P002: empty", "a P003: yes"]
+
+
+def test_ai_drafts_are_not_imported_as_human_labels(tmp_path):
+    path = tmp_path / "a.xlsx"
+    write_sheet(path, [1, 0], ["AI draft: verify before use", "Reviewed"])
+    assert problems(read_labels("a", path)) == ["a P001: AI draft needs human review"]
+
+
+def test_missing_duplicate_and_unassigned_pairs_are_rejected():
+    pairs = pd.DataFrame({"pair_id": ["P001", "P002"], "labellers": ["a|b", "a"]})
+    labels = pd.DataFrame({"pair_id": ["P001", "P001", "P002", "P003"], "labeller": ["a", "a", "a", "b"]})
+    assert assignment_problems(labels, pairs) == ["a P001: duplicate", "b P001: missing", "b P003: unexpected"]
 
 
 def test_agreement_on_shared_pairs():

@@ -46,6 +46,16 @@ def test_repeated_query_is_not_executed(monkeypatch):
         searcher.next_action(memory)
 
 
+def test_repeated_query_stops_with_existing_candidates(monkeypatch):
+    job = Job("1", "Accountant", "Work", "ACCOUNTANT")
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"tool":"search_jobs","arguments":{"query":"accountant"}}')
+    monkeypatch.setattr(tools, "search_jobs", lambda query: [job])
+    memory = Memory(semantic=Profile("ACCOUNTANT"))
+    assert searcher.search(memory) == [job]
+    assert [step.action for step in memory.short_term] == ["search_jobs", "stop"]
+    assert memory.short_term[-1].feedback == "Repeated search query"
+
+
 def test_skill_overlap_and_filter():
     job = Job("1", "Accountant", "", "ACCOUNTANT", ["Excel", "SQL"], "Entry level")
     assert tools.skill_overlap(Profile("ACCOUNTANT", skills=["excel"]), job) == 0.5

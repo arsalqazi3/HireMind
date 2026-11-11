@@ -33,4 +33,6 @@ Judge from the text only, and don't look at the other person's sheet. If unsure,
 2. Copy both finished workbooks into `data/labels/`.
 3. Run `python -m scripts.import_relevance_labels`. It lists any empty or invalid rows, then saves the labels and prints how often the two of you agreed.
 
+Hassaan's workbook currently contains AI-drafted suggestions based on portions of the displayed excerpts, not completed human labels. Review each pair against the full text and change the answer where needed, then remove the `AI draft` marker from that row's note. The importer rejects marked rows so provisional suggestions are not silently treated as ground truth. Arslan should label independently without consulting those suggestions. Agreement will compare AI-assisted human review against independent human review, not two unaided reviewers. `combined.xlsx` is a point-in-time summary and does not update automatically.
+
 To rebuild the sheets, run `python -m scripts.make_relevance_sheet`. It is seeded, so it makes the same pairs again, but don't rerun it after labelling has started.

@@ -26,14 +26,18 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Local model loader, search tools, bounded Searcher, Parser, Critic, Writer and agent loop implemented; automated tests cover the main paths
 - [x] Local search smoke test retrieved candidates from the shared FAISS index; repeated queries are stopped
 - [x] Base-model smoke test: Parser and Critic on synthetic examples, and agent ranking with a stubbed search; not a full real-data evaluation
+- [x] Relevance feature extraction for category, skill overlap, resume experience and job level; unknown values are kept separate
+- [x] TF-IDF plus logistic regression category baseline implemented and measured on validation (`reports/validation_baseline.md`); test evaluation remains
 
 ## In progress
 
 - [ ] Arslan labels `relevance_arslan.xlsx` (115 pairs)
-- [ ] Hassaan labels `relevance_hassaan.xlsx` (115 pairs)
-- [ ] Relevance rule features (resume years of experience and level, job level, skill overlap), built while labelling happens
-- [ ] Validate the base model and full agent on representative validation examples, including recommendation quality and CPU time
+- [ ] Hassaan reviews the 115 AI-drafted suggestions in `relevance_hassaan.xlsx` and removes each `AI draft` marker after review
+- [ ] Tune a relevance rule using reviewed labels, including how experience relates to job level
+- [ ] Expand validation beyond ten Parser examples and one full-agent resume, including human-reviewed recommendation quality and CPU time
+- [ ] Improve and independently validate Parser category accuracy; the prompt matched two of five noisy dataset labels on a separate small sample (`reports/validation_baseline.md`)
 - [ ] Improve Searcher stop/retry behavior; the base model repeated a query in the real-index smoke test
+- [ ] Further reduce and measure real CPU latency; one validation run improved from about 17 minutes to 6 minutes with Apple Silicon threading, under different background activity (`reports/validation_baseline.md`)
 - [ ] Evaluate the Critic's reasons and Writer's claim checking; the Writer currently falls back to a restrictive template for unverified drafts
 
 ## Decisions for the team
@@ -48,7 +52,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 - [ ] Relevance rule (category, skills and level), with cut-offs tuned on the hand labels
 - [ ] Score ablation A (FAISS only) on the test set
-- [ ] TF-IDF plus Logistic Regression baseline for the resume category
+- [ ] Evaluate the TF-IDF plus Logistic Regression category baseline on the held-out test split after development
 
 ### Training data (rule-based labels)
 
