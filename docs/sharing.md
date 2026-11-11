@@ -24,7 +24,10 @@ HireMind-shared/
   data/splits/      train.txt, val.txt, test.txt
   models/index/     jobs.faiss, job_ids.npy
   models/slm/       the fine-tuned model, later
+  labels/           relevance_arslan.xlsx, relevance_hassaan.xlsx (see docs/relevance_labelling.md)
 ```
+
+`labels/` has no matching repo folder. Copy the finished workbooks into `data/labels/` before importing them.
 
 ## How we work
 

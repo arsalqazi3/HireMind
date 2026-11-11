@@ -6,4 +6,5 @@ faiss-cpu
 pandas
 scikit-learn
 pypdf
+openpyxl
 streamlit

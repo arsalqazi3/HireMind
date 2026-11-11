@@ -14,16 +14,20 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] `scripts/clean_data.py`: 2,481 resumes, job pool of 10,013 (`74cd4ea`)
 - [x] `scripts/split_data.py`: 1,736 train, 372 validation, 373 test (`74cd4ea`)
 - [x] Shared skill list, 418 skills, in `hiremind/skills.csv` (`a9cc080`)
-- [x] FAISS index code, ranking metrics (P@5, MRR, NDCG@5) and the FAISS-only baseline, tested with a fake embedder (not committed yet)
+- [x] FAISS index code, ranking metrics (P@5, MRR, NDCG@5) and the FAISS-only baseline, tested with a fake embedder (`7538381`)
 - [x] Shared Google Drive folder [HireMind-shared](https://drive.google.com/drive/folders/162kfIrXeEE7Ku_BMO7dpCmVxHOor4Jnb), with Hassaan as editor
-- [x] `docs/sharing.md`: how the team shares large files
+- [x] `docs/sharing.md`: how the team shares large files (`2a617f2`)
 - [x] Embedding model downloaded (`all-MiniLM-L6-v2`) and job index built: 10,013 jobs, about 15 minutes on CPU
 - [x] Index check on validation resumes: 52.8% of the top 5 jobs share the resume's category (random would be about 4%). This is a check, not the proposal's baseline score
 - [x] Google Drive for desktop set up. `data/processed/`, `data/splits/` and `models/index/` uploaded to the shared folder, with Drive's checksums matching the local files
 
+- [x] Relevance labelling set: 200 validation pairs, sheets on Drive in `HireMind-shared/labels/`, import script ready (`docs/relevance_labelling.md`)
+
 ## In progress
 
-- Nothing right now
+- [ ] Arslan labels `relevance_arslan.xlsx` (115 pairs)
+- [ ] Hassaan labels `relevance_hassaan.xlsx` (115 pairs)
+- [ ] Relevance rule features (resume years of experience and level, job level, skill overlap), built while labelling happens
 
 ## Decisions for the team
 
@@ -35,7 +39,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 ### Matching evaluation setup
 
-- [ ] Relevance rule (category, skills and level), with cut-offs tuned on the validation set
+- [ ] Relevance rule (category, skills and level), with cut-offs tuned on the hand labels
 - [ ] Score ablation A (FAISS only) on the test set
 - [ ] TF-IDF plus Logistic Regression baseline for the resume category
 
