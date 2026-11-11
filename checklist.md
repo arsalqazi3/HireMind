@@ -22,12 +22,19 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Google Drive for desktop set up. `data/processed/`, `data/splits/` and `models/index/` uploaded to the shared folder, with Drive's checksums matching the local files
 
 - [x] Relevance labelling set: 200 validation pairs, sheets on Drive in `HireMind-shared/labels/`, import script ready (`docs/relevance_labelling.md`)
+- [x] Qwen3-0.6B selected as the base-model candidate; local CPU benchmark script added (quality and performance still need broader evaluation)
+- [x] Local model loader, search tools, bounded Searcher, Parser, Critic, Writer and agent loop implemented; automated tests cover the main paths
+- [x] Local search smoke test retrieved candidates from the shared FAISS index; repeated queries are stopped
+- [x] Base-model smoke test: Parser and Critic on synthetic examples, and agent ranking with a stubbed search; not a full real-data evaluation
 
 ## In progress
 
 - [ ] Arslan labels `relevance_arslan.xlsx` (115 pairs)
 - [ ] Hassaan labels `relevance_hassaan.xlsx` (115 pairs)
 - [ ] Relevance rule features (resume years of experience and level, job level, skill overlap), built while labelling happens
+- [ ] Validate the base model and full agent on representative validation examples, including recommendation quality and CPU time
+- [ ] Improve Searcher stop/retry behavior; the base model repeated a query in the real-index smoke test
+- [ ] Evaluate the Critic's reasons and Writer's claim checking; the Writer currently falls back to a restrictive template for unverified drafts
 
 ## Decisions for the team
 
@@ -52,17 +59,14 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 ### Model
 
-- [ ] Pick the base SLM (a few hundred million parameters), checking speed and memory on the laptop CPU
+- [ ] Confirm Qwen3-0.6B meets accuracy, CPU speed and memory requirements on representative inputs
 - [ ] Fine-tune all four roles with LoRA on Colab, choosing the checkpoint on validation
 - [ ] Merge the LoRA weights if it helps CPU speed
 
 ### Agent
 
-- [ ] `hiremind/slm.py`: load the model and generate with task tokens
-- [ ] Tools: `search_jobs`, `filter_jobs`, `get_job_details`, `skill_overlap`
-- [ ] Roles: Parser, Searcher (ReAct loop, at most 3 rounds), Critic (cutoff 6), Writer with claim checker
-- [ ] Memory: semantic, episodic and short-term
-- [ ] `hiremind/agent.py`: the full loop with Critic retries
+- [ ] Evaluate and improve the implemented roles and agent loop, including three-round retries, claim checks and memory ablations
+- [ ] Integrate and test the fine-tuned adapter in the model loader
 
 ### App
 
