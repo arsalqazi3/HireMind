@@ -20,5 +20,6 @@ MAX_SEARCH_ROUNDS = 3
 CRITIC_CUTOFF = 6.0  # out of 10, tuned on the validation set
 TOP_K = 5
 JOB_POOL_SIZE = 10_000
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 SPLIT = (0.70, 0.15, 0.15)  # train, validation, test
 SEED = 42

@@ -2,7 +2,10 @@
 
 Run as: python -m scripts.build_index
 """
-from hiremind import config, index
+from functools import partial
+
+from hiremind import index
 
 if __name__ == "__main__":
-    index.build(str(config.PROCESSED_DIR / "jobs.csv"), str(config.MODELS_DIR / "index"))
+    built = index.build(embed_fn=partial(index.embed, show_progress=True))
+    print(f"indexed {built.index.ntotal} jobs, {built.index.d} dimensions")
