@@ -1,6 +1,6 @@
 # HireMind checklist
 
-Last updated: 2026-11-11
+Last updated: 2026-11-14
 
 Updated after every finished task. Steps follow the proposal (`HireMind_Proposal.pdf`).
 
@@ -28,6 +28,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Base-model smoke test: Parser and Critic on synthetic examples, and agent ranking with a stubbed search; not a full real-data evaluation
 - [x] Relevance feature extraction for category, skill overlap, resume experience and job level; unknown values are kept separate
 - [x] TF-IDF plus logistic regression category baseline implemented and measured on validation (`reports/validation_baseline.md`); test evaluation remains
+- [x] `scripts/benchmark_slm.py` reports peak memory on Windows as well as macOS and Linux, so the full test suite runs on both laptops
 
 ## In progress
 

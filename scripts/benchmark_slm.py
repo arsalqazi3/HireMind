@@ -7,10 +7,37 @@ import argparse
 import csv
 import json
 import os
-import resource
+import sys
 import time
 
 from hiremind import config
+
+
+def peak_rss_mib() -> float:
+    """Peak memory of this process in MiB, on Windows, macOS and Linux."""
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+
+        class Counters(ctypes.Structure):
+            _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD),
+                        ("PeakWorkingSetSize", ctypes.c_size_t), ("WorkingSetSize", ctypes.c_size_t),
+                        ("QuotaPeakPagedPoolUsage", ctypes.c_size_t), ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t), ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                        ("PagefileUsage", ctypes.c_size_t), ("PeakPagefileUsage", ctypes.c_size_t)]
+
+        kernel32 = ctypes.WinDLL("kernel32")
+        kernel32.GetCurrentProcess.restype = wintypes.HANDLE  # 64-bit handle, not the default int
+        kernel32.K32GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(Counters), wintypes.DWORD]
+        kernel32.K32GetProcessMemoryInfo.restype = wintypes.BOOL
+        counters = Counters(cb=ctypes.sizeof(Counters))
+        if not kernel32.K32GetProcessMemoryInfo(kernel32.GetCurrentProcess(), ctypes.byref(counters), counters.cb):
+            raise OSError("Could not read process memory")
+        return counters.PeakWorkingSetSize / 1024**2
+    import resource  # not available on Windows
+
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return peak / 1024**2 if sys.platform == "darwin" else peak / 1024  # bytes on macOS, KiB on Linux
 
 
 def validation_example():
@@ -65,7 +92,7 @@ def main():
                 print("Valid JSON: yes")
             except json.JSONDecodeError:
                 print("Valid JSON: no")
-    print(f"\nPeak process RSS: {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024**2:.0f} MiB (macOS)")
+    print(f"\nPeak process memory: {peak_rss_mib():.0f} MiB")
 
 
 if __name__ == "__main__":

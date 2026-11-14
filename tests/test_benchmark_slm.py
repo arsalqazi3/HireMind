@@ -1,7 +1,11 @@
 import csv
 
 from hiremind import config
-from scripts.benchmark_slm import validation_example
+from scripts.benchmark_slm import peak_rss_mib, validation_example
+
+
+def test_peak_memory_is_reported_on_this_system():
+    assert 1 < peak_rss_mib() < 100_000  # a running Python process uses more than 1 MiB
 
 
 def test_example_uses_only_validation_resume(tmp_path, monkeypatch):
