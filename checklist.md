@@ -1,14 +1,14 @@
 # HireMind checklist
 
-Last updated: 2026-11-14
+Last updated: 2026-11-18
 
 Updated after every finished task. Steps follow the proposal (`HireMind_Proposal.pdf`).
 
 ## Done
 
 - [x] Project skeleton: folders, stubs, config, tests (`dc7c592`)
-- [x] Python 3.13 venv with all requirements
-- [x] Kaggle datasets downloaded to `data/raw/`
+- [x] Local Python environment and project dependencies installed
+- [x] Kaggle datasets acquired for the original data-processing run; raw data is not included in Git
 - [x] Data exploration, written up in `docs/data_notes.md` (`648aa74`)
 - [x] Job to resume category mapping rules in `docs/category_mapping.md` (`648aa74`)
 - [x] `scripts/clean_data.py`: 2,481 resumes, job pool of 10,013 (`74cd4ea`)
@@ -28,7 +28,14 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Base-model smoke test: Parser and Critic on synthetic examples, and agent ranking with a stubbed search; not a full real-data evaluation
 - [x] Relevance feature extraction for category, skill overlap, resume experience and job level; unknown values are kept separate
 - [x] TF-IDF plus logistic regression category baseline implemented and measured on validation (`reports/validation_baseline.md`); test evaluation remains
+- [x] Added candidate-review progress and cover-letter drafting progress, evidence-based score adjustments, and a repeated-query fallback; these heuristics need validation
+- [x] Streamlit demo connects resume upload, matching results, recorded steps and cover letter generation to the local agent; interaction tested with a stubbed model
 - [x] `scripts/benchmark_slm.py` reports peak memory on Windows as well as macOS and Linux, so the full test suite runs on both laptops
+- [x] Apple Silicon GPU inference with CPU fallback and a device benchmark script
+- [x] Weighted matching: job requirements, experience and user preferences, with an optional in-depth review; unavailable preferences are excluded
+- [x] Structured, editable cover letters use extracted applicant details and supported resume history
+- [x] Updated the Streamlit interface using the supplied design reference, including matching and letter progress indicators
+- [x] Ran five matching passes for each of five fictional resumes; the historical findings are in `reports/sample_qualification_2026-11-17.md`
 
 ## In progress
 
@@ -39,7 +46,8 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [ ] Improve and independently validate Parser category accuracy; the prompt matched two of five noisy dataset labels on a separate small sample (`reports/validation_baseline.md`)
 - [ ] Improve Searcher stop/retry behavior; the base model repeated a query in the real-index smoke test
 - [ ] Further reduce and measure real CPU latency; one validation run improved from about 17 minutes to 6 minutes with Apple Silicon threading, under different background activity (`reports/validation_baseline.md`)
-- [ ] Evaluate the Critic's reasons and Writer's claim checking; the Writer currently falls back to a restrictive template for unverified drafts
+- [ ] Evaluate the Critic's reasons and the Writer's structured, profile-grounded drafts with human reviewers
+- [ ] Calibrate the revised weighted scores and in-depth review against human-reviewed matches; the earlier fictional-resume runs predate these changes
 
 ## Decisions for the team
 
@@ -75,7 +83,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 ### App
 
-- [ ] Streamlit app: upload a resume, see the profile, watch the steps, get 5 jobs and a cover letter
+- [ ] Validate the Streamlit app end to end with real resumes; show steps live and improve progress during slow CPU inference
 
 ### Evaluation and report
 

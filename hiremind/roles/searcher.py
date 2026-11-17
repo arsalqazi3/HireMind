@@ -4,6 +4,7 @@ Reads the profile from semantic memory, and past queries and Critic feedback
 from episodic memory, so it does not repeat a failed search.
 """
 import json
+import re
 from dataclasses import asdict
 
 from hiremind import slm, tools
@@ -47,6 +48,8 @@ def next_action(memory: Memory) -> tuple[str, dict]:
         query = " ".join(args["query"].split())
         if query.casefold() == "job and skills":
             raise ValueError("Search query is an unfilled example")
+        if memory.semantic.name and query.casefold() == memory.semantic.name.casefold():
+            raise ValueError("Search query contains only the applicant name")
         if memory.use_episodic and query.casefold() in {q.casefold() for q in memory.episodic.queries}:
             raise ValueError("Repeated search query")
         return name, {"query": query}
@@ -87,6 +90,21 @@ def search(memory: Memory) -> list[Job]:
                 result = asdict(tools.get_job_details(job.job_id)) if name == "get_job_details" else {"overlap": tools.skill_overlap(memory.semantic, job)}
             memory.short_term.append(Step(state={}, action=name, args=args, result=result))
         except (ValueError, KeyError) as exc:
+            if str(exc) == "Repeated search query" and not candidates and memory.semantic:
+                profile = memory.semantic
+                options = [" ".join(" ".join([role, *profile.skills[:3]]).split()[:8]) for role in profile.roles]
+                options.append(" ".join(" ".join([profile.category.replace("-", " "), *profile.skills[:3]]).split()[:8]))
+                tried = {" ".join(q.split()).casefold() for q in memory.episodic.queries}
+                query = next((q for q in options if re.search(r"\w", q) and q.casefold() not in tried), None)
+                if query:
+                    found = tools.search_jobs(query)
+                    memory.episodic.queries.append(query)
+                    candidates = [job for job in found if job.job_id not in memory.episodic.seen_job_ids]
+                    memory.episodic.seen_job_ids.update(job.job_id for job in candidates)
+                    memory.short_term.append(Step(state={}, action="search_jobs", args={"query": query},
+                                                  result=[{"job_id": job.job_id, "title": job.title} for job in candidates],
+                                                  feedback="Used an alternative query after a repeated search."))
+                    break
             action = "stop" if candidates and str(exc) == "Repeated search query" else "error"
             memory.short_term.append(Step(state={}, action=action, args={}, feedback=str(exc)))
             break

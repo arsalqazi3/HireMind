@@ -62,3 +62,22 @@ def test_skill_overlap_and_filter():
     assert tools.skill_overlap(Profile("ACCOUNTANT"), Job("2", "Other", "", "OTHER")) == 0
     assert tools.filter_jobs([job], level="Entry level") == [job]
     assert tools.filter_jobs([job], category="OTHER") == []
+
+
+def test_retry_uses_alternative_query_after_repeat(monkeypatch):
+    job = Job("2", "Developer", "", "INFORMATION-TECHNOLOGY")
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"tool":"search_jobs","arguments":{"query":"developer"}}')
+    queries = []
+    monkeypatch.setattr(tools, "search_jobs", lambda query: queries.append(query) or [job])
+    memory = Memory(semantic=Profile("INFORMATION-TECHNOLOGY", skills=["Python"], roles=["Software Engineer"]))
+    memory.episodic.queries.append("developer")
+    assert searcher.search(memory) == [job]
+    assert queries == ["Software Engineer Python"]
+    assert "alternative query" in memory.short_term[-1].feedback
+
+
+def test_applicant_name_alone_is_not_used_as_job_query(monkeypatch):
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"tool":"search_jobs","arguments":{"query":"Taylor Ahmed"}}')
+    memory = Memory(semantic=Profile("IT", name="Taylor Ahmed"))
+    with pytest.raises(ValueError, match="applicant name"):
+        searcher.next_action(memory)

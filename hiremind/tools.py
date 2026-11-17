@@ -12,6 +12,7 @@ def _jobs() -> dict[str, Job]:
             job_id=row["job_id"], title=row["title"], description=row["description"],
             category=row["category"], skills=[s for s in row["skills"].split("|") if s],
             level=row["level"] or None,
+            location=row.get("location") or None, work_type=row.get("work_type") or None,
         ) for row in csv.DictReader(f)}
 
 

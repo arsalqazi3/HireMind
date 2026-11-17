@@ -34,12 +34,13 @@ def test_critic_rejects_invalid_scores(monkeypatch):
 
 
 def test_writer_never_returns_unverified_draft(monkeypatch):
-    monkeypatch.setattr(writer, "write", lambda *args: "I have a PhD and ten years of experience.")
     profile = Profile("IT", skills=["Python"])
-    letter = writer.write_checked(profile, Job("1", "Developer", "", "IT"))
+    job = Job("1", "Developer", "", "IT")
+    letter = writer.write_checked(profile, job)
     assert "PhD" not in letter
     assert "Python" in letter
-    assert writer.unsupported_claims(letter, profile) == []
+    assert "Developer position" in letter
+    assert writer.unsupported_claims(letter, profile, job) == []
     assert writer.unsupported_claims("I have a PhD.", profile) == ["I have a PhD."]
 
 
@@ -53,8 +54,8 @@ def test_agent_retries_and_returns_only_acceptable_ranked_jobs(monkeypatch):
     monkeypatch.setattr(searcher, "search", fake_search)
     monkeypatch.setattr(critic, "judge", lambda profile, jobs: [Judgement(jobs[0].job_id, 4 if len(calls) == 1 else 8, "reason")])
     result = agent.run("resume")
-    assert result.retries == 1
-    assert [j.job_id for j in result.top_jobs] == ["2"]
+    assert result.retries == 2
+    assert [j.job_id for j in result.top_jobs] == ["2", "3"]
     assert calls[1]
 
 
@@ -65,3 +66,69 @@ def test_agent_without_critic(monkeypatch):
     result = agent.run("resume", use_critic=False, use_episodic=False)
     assert result.top_jobs[0].job_id == "1"
     assert result.retries == 0
+
+
+def test_parser_recovers_literal_sections_when_model_returns_placeholders(monkeypatch):
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"category":"ENGINEERING","roles":["null"],"education":["null"],"projects":["null"]}')
+    text = "PROFILE\nSoftware engineer with 4 years of experience.\nEXPERIENCE\nSoftware Engineer, Example Inc | 2022–2026\n- Built software, with Python.\nEDUCATION\nComputer Science Degree, Example University\nPROJECTS\nBuilt a Python tool."
+    profile = parser.parse(text)
+    assert profile.roles == ["Software Engineer"]
+    assert profile.education == ["Computer Science Degree, Example University"]
+    assert profile.projects == ["Built a Python tool."]
+    assert profile.category == "INFORMATION-TECHNOLOGY"
+
+
+def test_personalized_letter_uses_resume_name_and_relevant_skills():
+    profile = Profile("INFORMATION-TECHNOLOGY", name="Alex Morgan", skills=["Python", "JavaScript", "Docker"],
+                      years_experience=4, roles=["Software Engineer"], projects=["Built a Python reporting tool."])
+    job = Job("1", "Backend Engineer", "", "INFORMATION-TECHNOLOGY", ["Python", "JavaScript"])
+    letter = writer.write_checked(profile, job)
+    assert letter.startswith("Alex Morgan\n")
+    assert letter.endswith("Alex Morgan")
+    assert "Python, JavaScript" in letter and "Docker" not in letter
+    assert "I built a Python reporting tool" in letter
+    assert "[Your name]" not in letter
+    assert writer.unsupported_claims(letter, profile, job) == []
+
+
+def test_name_extraction_ignores_job_titles_and_allows_unknown():
+    assert parser.extract_name("Alex Morgan\nSoftware Engineer\n") == "Alex Morgan"
+    assert parser.extract_name("TEST RESUME — FICTIONAL\nSamira Khan\nData Analyst\n") == "Samira Khan"
+    assert parser.extract_name("Software Engineer\nPROFILE\nPython, SQL\n") is None
+
+
+def test_cover_letter_uses_resume_experience_evidence_without_inventing():
+    p = Profile("IT", name="Taylor Ahmed", skills=["HTML", "JavaScript"], roles=["Software Development Intern"],
+                experience_evidence=["Updated website pages using HTML and JavaScript.", "Worked with a developer to test fixes."])
+    job = Job("1", "Web Developer", "Build websites with HTML and JavaScript.", "IT", ["HTML", "JavaScript"])
+    letter = writer.write_checked(p, job)
+    assert "I updated website pages using HTML and JavaScript." in letter
+    assert "I worked with a developer to test fixes." in letter
+    assert writer.unsupported_claims(letter, p, job) == []
+
+
+def test_recent_graduate_flags_senior_title_without_inventing_years(monkeypatch):
+    from hiremind import matching
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"category":"INFORMATION-TECHNOLOGY"}')
+    p = parser.parse("Taylor Ahmed\nPROFILE\nRecent computer science graduate seeking a junior web developer role.\nSKILLS\nPython\nEXPERIENCE\nSoftware Development Intern, Example Studio | Summer 2025\n- Updated website pages using Python.")
+    assert p.early_career and p.years_experience is None
+    assert p.experience_evidence == ["Updated website pages using Python."]
+    senior = Job("s", "Senior Cloud Architect", "Seeking an experienced cloud architect.", "INFORMATION-TECHNOLOGY", ["Python"])
+    misleading = Job("j", "Senior Software Engineer", "We are looking for talented Junior Software Engineers.", "INFORMATION-TECHNOLOGY", ["Python"])
+    assert matching.adjust(p, senior, Judgement("s", 8, "")).score < 6
+    assert matching.adjust(p, misleading, Judgement("j", 8, "")).score >= 6
+
+
+def test_employer_text_is_not_promoted_to_a_project(monkeypatch):
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"category":"ACCOUNTANT","projects":["Example Manufacturing | 2022–2026"]}')
+    p = parser.parse("Avery Reed\nEXPERIENCE\nStaff Accountant, Example Manufacturing | 2022–2026\n- Prepared financial reports.\nEDUCATION\nAccounting degree")
+    assert not p.projects
+    assert "project" not in writer.write_checked(p, Job("1", "Accountant", "", "ACCOUNTANT")).lower()
+
+
+def test_clear_occupation_corrects_unrelated_model_category(monkeypatch):
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"category":"FINANCE"}')
+    accountant = parser.parse("Avery Reed\nEXPERIENCE\nStaff Accountant, Example Manufacturing | 2022–2026")
+    analyst = parser.parse("Samira Khan\nEXPERIENCE\nData Analyst, Example Retail | 2023–2026")
+    assert accountant.category == "ACCOUNTANT"
+    assert analyst.category == "INFORMATION-TECHNOLOGY"

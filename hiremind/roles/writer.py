@@ -1,40 +1,84 @@
-"""Writer: cover letter for the chosen job, then a claim check."""
-import json
-from dataclasses import asdict
+"""Create a grounded, editable business-style cover letter.
 
-from hiremind import slm
+The draft is assembled from the job title and verified profile fields. It does
+not invent contact details, employers, achievements, or a hiring contact.
+"""
 from hiremind.schemas import Job, Profile
+from hiremind.skills import extract_skills
 
 
-def _safe_lines(profile: Profile) -> list[str]:
-    lines = ["Dear Hiring Manager,", "I am interested in this position."]
-    if profile.skills:
-        lines.append("My listed skills include " + ", ".join(profile.skills) + ".")
+def _experience_sentences(profile: Profile, job: Job | None) -> list[str]:
+    """Select literal resume bullets, preferring skills present in the posting."""
+    job_terms = {s.casefold() for s in (job.skills if job else [])}
+    if job:
+        job_terms.update(s.casefold() for s in extract_skills(job.description))
+    candidates = [item.strip().rstrip(". ") for item in profile.experience_evidence if item.strip()]
+    candidates.sort(key=lambda text: -len({s.casefold() for s in extract_skills(text)} & job_terms))
+    sentences = []
+    for text in candidates[:2]:
+        first = text.split(maxsplit=1)[0].casefold()
+        if first in {"built", "created", "developed", "designed", "analyzed", "analysed", "implemented", "updated", "worked", "wrote", "prepared", "supported", "maintained", "assessed", "documented", "provided", "coordinated", "managed", "used"}:
+            sentences.append("I " + text[0].lower() + text[1:] + ".")
+        else:
+            sentences.append("My resume describes this experience: “" + text + ".\u201d")
+    return sentences
+
+
+def _safe_lines(profile: Profile, job: Job | None = None) -> list[str]:
+    title = job.title.strip() if job and job.title.strip() else "[Job title]"
+    name = profile.name.strip() if profile.name and profile.name.strip() else "[Your name]"
+    lines = [name, "[Your email] | [Your phone]", "[Date]", "[Employer name]", "Dear Hiring Manager,"]
+    opening = f"I am writing to apply for the {title} position."
+    if profile.years_experience is not None:
+        opening += f" I have {profile.years_experience:g} years of experience."
+    lines.append(opening)
+    evidence = []
+    if profile.roles:
+        evidence.append("My resume highlights these roles: " + ", ".join(profile.roles[:3]) + ".")
+    job_skills = {s.casefold() for s in job.skills} if job else set()
+    relevant = [s for s in profile.skills if s.casefold() in job_skills]
+    if relevant:
+        evidence.append("My skills include " + ", ".join(relevant[:6]) + ".")
+    elif profile.skills:
+        evidence.append("My skills include " + ", ".join(profile.skills[:6]) + ".")
+    experience = _experience_sentences(profile, job)
+    if evidence:
+        lines.append(" ".join(evidence))
+    if experience:
+        lines.append(" ".join(experience))
+    evidence = []
+    if profile.projects and profile.projects[0].strip():
+        project = profile.projects[0].strip().rstrip(". ")
+        if project.split(maxsplit=1)[0].casefold() in {"built", "created", "developed", "designed", "analyzed", "implemented"}:
+            evidence.append("In one project, I " + project[0].lower() + project[1:] + ".")
+        else:
+            evidence.append("My resume also describes this project: " + project + ".")
+    if evidence:
+        lines.append(" ".join(evidence))
     if profile.education:
-        lines.append("My education includes " + ", ".join(profile.education) + ".")
-    lines.extend(["Thank you for your consideration.", "Sincerely,"])
+        lines.append("My education includes " + ", ".join(profile.education[:2]) + ".")
+    lines.extend(["I would welcome the opportunity to discuss my qualifications for this role. Thank you for your consideration.",
+                  "Sincerely,", name])
     return lines
 
 
-def write(profile: Profile, job: Job) -> str:
-    prompt = ('Write a short cover letter for this job using only facts from the profile. '
-              'Do not invent qualifications.\nProfile: ' + json.dumps(asdict(profile), ensure_ascii=False)
-              + '\nJob: ' + json.dumps(asdict(job), ensure_ascii=False))
-    return slm.generate("writer", prompt, max_new_tokens=512).strip()
-
-
-def unsupported_claims(letter: str, profile: Profile) -> list[str]:
-    """Return skills, experience, education or projects in the letter that are not in the profile."""
-    allowed = set(_safe_lines(profile))
+def unsupported_claims(letter: str, profile: Profile, job: Job | None = None) -> list[str]:
+    """Identify lines outside the deterministic draft; this is not a general claim verifier."""
+    allowed = set(_safe_lines(profile, job))
     return [line.strip() for line in letter.splitlines() if line.strip() and line.strip() not in allowed]
 
 
-def write_checked(profile: Profile, job: Job, max_tries: int = 2) -> str:
-    """Write the letter, then remove unsupported claims or write it again."""
+def write_checked(profile: Profile, job: Job, max_tries: int = 2, progress=None) -> str:
+    """Compose a draft from supported fields. The user must review and edit it."""
     if max_tries < 1:
         raise ValueError("max_tries must be positive")
-    for _ in range(max_tries):
-        letter = write(profile, job)
-        if [line.strip() for line in letter.splitlines() if line.strip()] == _safe_lines(profile):
-            return letter
-    return "\n\n".join(_safe_lines(profile))
+    if progress:
+        progress({"phase": "drafting", "attempt": 1, "total": 1})
+    letter = "\n\n".join(_safe_lines(profile, job))
+    if progress:
+        progress({"phase": "checking", "attempt": 1, "total": 1})
+    if unsupported_claims(letter, profile, job):
+        raise ValueError("Could not verify the generated draft")
+    if progress:
+        progress({"phase": "done", "attempt": 1, "total": 1})
+    return letter

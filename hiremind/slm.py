@@ -1,6 +1,7 @@
-"""Load and run the local language model on the CPU."""
+"""Load and run the local language model on the available device."""
 import os
 import platform
+import warnings
 from functools import lru_cache
 
 from hiremind import config
@@ -15,7 +16,20 @@ def load(model_dir: str | None = None):
 
     source = model_dir or "Qwen/Qwen3-0.6B"
     tokenizer = AutoTokenizer.from_pretrained(source)
-    model = AutoModelForCausalLM.from_pretrained(source).to("cpu").eval()
+    setting = os.environ.get("HIREMIND_DEVICE", "auto").lower()
+    if setting not in {"auto", "cpu", "mps"}:
+        raise ValueError("HIREMIND_DEVICE must be auto, cpu, or mps")
+    if setting == "mps" and not torch.backends.mps.is_available():
+        raise RuntimeError("MPS GPU is not available on this machine")
+    device = "mps" if setting != "cpu" and torch.backends.mps.is_available() else "cpu"
+    model = AutoModelForCausalLM.from_pretrained(source)
+    try:
+        model = model.to(device).eval()
+    except (RuntimeError, NotImplementedError) as exc:
+        if setting != "auto" or device != "mps":
+            raise
+        warnings.warn(f"Could not load model on MPS; using CPU: {exc}")
+        model = model.to("cpu").eval()
     if platform.system() == "Darwin" and platform.machine() == "arm64":
         torch.set_num_threads(min(4, os.cpu_count() or 1))
     return tokenizer, model
@@ -33,6 +47,15 @@ def generate(task: str, prompt: str, max_new_tokens: int = 512) -> str:
     inputs = tokenizer(text, return_tensors="pt")
     if inputs.input_ids.shape[1] + max_new_tokens > 16_384:
         raise ValueError("Prompt exceeds the 16K context budget")
+    inputs = inputs.to(model.device)
     with torch.inference_mode():
-        output = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
+        try:
+            output = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
+        except (RuntimeError, NotImplementedError) as exc:
+            if model.device.type != "mps" or os.environ.get("HIREMIND_DEVICE", "auto").lower() != "auto":
+                raise
+            warnings.warn(f"MPS generation failed; using CPU: {exc}")
+            model.to("cpu")
+            inputs = inputs.to("cpu")
+            output = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
     return tokenizer.decode(output[0, inputs.input_ids.shape[1]:], skip_special_tokens=True)
