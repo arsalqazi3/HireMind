@@ -1,6 +1,6 @@
 """Local Streamlit interface for the HireMind agent."""
 from hashlib import sha256
-from io import BytesIO
+from html import escape
 from pathlib import Path
 import re
 import sys
@@ -8,24 +8,9 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import streamlit as st
-from pypdf import PdfReader
-
 from hiremind import agent, tools
+from hiremind.roles.parser import resume_text
 from hiremind.schemas import Preferences
-
-
-def resume_text(name: str, content: bytes) -> str:
-    """Extract text without writing the uploaded resume to disk."""
-    suffix = Path(name).suffix.lower()
-    if suffix == ".txt":
-        text = content.decode("utf-8-sig")
-    elif suffix == ".pdf":
-        text = "\n".join(page.extract_text() or "" for page in PdfReader(BytesIO(content)).pages)
-    else:
-        raise ValueError("Resume must be a PDF or text file")
-    if not text.strip():
-        raise ValueError("Resume contains no extractable text")
-    return text
 
 
 def job_title_for_display(job) -> str:
@@ -40,24 +25,32 @@ def main() -> None:
     st.set_page_config(page_title="HireMind", page_icon="◈", layout="wide", initial_sidebar_state="collapsed")
     css = (Path(__file__).parent / "styles.css").read_text(encoding="utf-8")
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
-    st.markdown('''<div class="hm-header">
-      <div class="hm-brand">HIREMIND <span>// AI Career Engine</span></div>
+    st.markdown('''<header class="hm-header">
+      <div class="hm-brand"><span class="hm-brand-mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="4" y="6" width="16" height="14" rx="2"/><path d="M9 6V4h6v2M4 11l8 2 8-2"/>
+        </svg></span>HireMind</div>
       <nav class="hm-nav" aria-label="Workspace sections">
-        <a href="#workspace" target="_self">Workspace</a><a href="#job-matches" target="_self">Job Matcher</a><a href="#cover-letter" target="_self">Cover Letter</a>
-      </nav><span class="hm-tag">Local workspace</span></div>
-      <div class="hm-hero" id="workspace"><span class="hm-tag">Your career workspace</span>
-      <h1>Find work that fits.</h1><p>Bring your experience into focus. Explore job matches and prepare a cover letter, all on your own device.</p></div>''', unsafe_allow_html=True)
+        <a href="#workspace" target="_self">Résumé</a><a href="#job-matches" target="_self">Job matches</a>
+        <a href="#cover-letter" target="_self">Cover letter</a>
+      </nav></header>
+      <section class="hm-hero" id="workspace">
+        <h1>Job matching workspace</h1>
+        <p>Find roles that fit your résumé, review the evidence, and draft a cover letter for the job you choose.</p>
+      </section>''', unsafe_allow_html=True)
 
-    left, center, right = st.columns([0.87, 1.5, 1.1], gap="large")
+    left, center, right = st.columns([0.9, 1.5, 1.1], gap="medium")
     with left:
-        with st.container(border=True):
-            st.markdown('<div class="hm-label">01 / Your resume</div>', unsafe_allow_html=True)
-            st.subheader("Start with your story")
-            st.caption("Upload a PDF or text resume to find roles based on your experience.")
+        with st.container(border=True, key="upload-panel"):
+            st.header("Your résumé")
+            st.caption("Upload a text-based PDF or UTF-8 TXT resume to find roles based on your experience.")
             uploaded = st.file_uploader("Upload your resume", type=["pdf", "txt"])
+            search_clicked = st.button("Find matching jobs", type="primary", use_container_width=True, disabled=not uploaded)
+            if not uploaded:
+                st.caption("Upload a résumé to start matching.")
             in_depth = st.toggle("In-depth review", value=False,
                                  help="Use separate model checks for requirements, experience and preferences when enough information is available. This is slower.")
-            with st.expander("Optional job preferences"):
+            with st.expander("Job preferences"):
                 location = st.text_input("Preferred city or location", help="A simple text match, not a commute or eligibility check.")
                 arrangement = st.selectbox("Preferred work arrangement", ["No preference", "Remote", "Hybrid", "Onsite"])
                 min_salary = st.number_input("Minimum annual salary (optional)", min_value=0, value=0, step=1000,
@@ -68,10 +61,13 @@ def main() -> None:
                                       work_mode=None if arrangement == "No preference" else arrangement.lower(),
                                       min_salary=float(min_salary) if min_salary else None,
                                       benefits=benefits.strip() or None)
-            search_clicked = st.button("Find matching jobs", type="primary", use_container_width=True, disabled=not uploaded)
-        with st.container(border=True):
-            st.markdown('<div class="hm-label">How matching works</div>', unsafe_allow_html=True)
-            st.markdown("**60%** job requirements  \n**30%** experience and seniority  \n**10%** your preferences")
+        with st.container(border=True, key="method-panel"):
+            st.header("How scoring works")
+            st.markdown('''<dl class="hm-weights">
+              <div><dt>Job requirements</dt><dd>60%</dd></div>
+              <div><dt>Experience</dt><dd>30%</dd></div>
+              <div><dt>Your preferences</dt><dd>10%</dd></div>
+            </dl>''', unsafe_allow_html=True)
             st.caption("Unavailable details are excluded. Scores are provisional, not probabilities.")
 
     upload_key = sha256(uploaded.getvalue()).hexdigest() if uploaded else None
@@ -80,9 +76,8 @@ def main() -> None:
             st.session_state.pop(key, None)
         st.session_state.upload_key = upload_key
 
-    with center:
-        st.markdown('<div id="job-matches"></div><div class="hm-label">02 / Your matches</div>', unsafe_allow_html=True)
-        st.subheader("A closer look at your matches")
+    with center, st.container(border=True, key="match-panel"):
+        st.header("Job matches", anchor="job-matches")
         st.caption("Review the fit, the evidence and the full job description before applying.")
         status = st.empty()
         bar_slot = st.empty()
@@ -119,18 +114,17 @@ def main() -> None:
         result = st.session_state.get("result")
         jobs = {}
         if result is None:
-            with st.container(border=True):
-                st.markdown('<div class="hm-empty"><strong>Your matches will appear here</strong>Upload your resume and start a search to see ranked jobs and the evidence behind each score.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="hm-empty"><strong>Your matches will appear here</strong>Upload your résumé and select Find matching jobs to see up to five ranked results.</div>', unsafe_allow_html=True)
         else:
-            with st.expander("Search steps"):
-                if not result.steps:
-                    st.write("No search steps were recorded.")
-                for step in result.steps:
-                    st.write(f"**{step.action}**", step.args)
-                    if step.feedback:
-                        st.write(step.feedback)
-                st.caption(f"Critic retries: {result.retries}")
-            st.caption("Scores use 60% requirements, 30% experience and 10% preferences when available. Unknown components are excluded and weights rescaled. Results must meet the current 6/10 requirements and qualification cutoffs. Changes to preferences apply on the next search.")
+            if result.top_jobs:
+                count = len(result.top_jobs)
+                top_score = result.top_jobs[0].score
+                st.markdown(
+                    f'<div class="hm-summary"><strong>{count} ranked {"match" if count == 1 else "matches"}</strong>'
+                    f'<span class="hm-score">Top score {top_score:g}/10</span></div>',
+                    unsafe_allow_html=True,
+                )
+            st.caption("Expand a result to see its score and evidence. Unknown components are excluded from the score.")
             if result.profile.early_career:
                 st.caption("Roles described as senior are excluded for this early-career search unless the posting describes a junior role. Titles and descriptions can be inaccurate.")
             if not result.top_jobs:
@@ -143,21 +137,40 @@ def main() -> None:
                 with st.expander(f"{job_title_for_display(job)} — {judgement.score:g}/10"):
                     if judgement.breakdown:
                         b = judgement.breakdown
-                        def display(value):
-                            return f"{value:g}/10" if value is not None else "Unknown"
-                        st.write(f"**Requirements (60%):** {display(b.requirements)}  |  **Experience (30%):** {display(b.experience)}  |  **Preferences (10%):** {display(b.preferences)}")
-                        st.write(f"**Qualification match:** {display(b.qualification)}  |  **Score coverage:** {b.coverage:.0%}  |  **Review:** {b.mode}")
+                        components = (
+                            ("Requirements (60%)", b.requirements),
+                            ("Experience (30%)", b.experience),
+                            ("Preferences (10%)", b.preferences),
+                        )
+                        breakdown = "".join(
+                            f"<div><dt>{label}</dt><dd>{f'{value:g}/10' if value is not None else 'Unknown'}</dd></div>"
+                            for label, value in components
+                        )
+                        st.markdown(f'<dl class="hm-breakdown">{breakdown}</dl>', unsafe_allow_html=True)
+                        qualification = f"{b.qualification:g}/10" if b.qualification is not None else "Unknown"
+                        st.caption(f"Qualification match: {qualification} · Score coverage: {b.coverage:.0%} · Review: {b.mode}")
                         if b.preference_coverage:
                             st.caption(f"Preference information assessed: {b.preference_coverage:.0%} of the preferences you specified.")
                         st.caption("Unknown qualifications or preferences make a score partial. Review the evidence and original posting.")
                     st.write(judgement.reason)
                     st.write(f"**Category:** {job.category}  |  **Level:** {job.level or 'Not specified'}  |  **Location:** {job.location or 'Not specified'}")
-                    st.write(job.description)
+                    st.markdown(
+                        '<details class="hm-posting"><summary>Full job description</summary>'
+                        f'<div>{escape(job.description)}</div></details>',
+                        unsafe_allow_html=True,
+                    )
+            with st.expander("Search steps"):
+                if not result.steps:
+                    st.write("No search steps were recorded.")
+                for step in result.steps:
+                    st.write(f"**{step.action}**", step.args)
+                    if step.feedback:
+                        st.write(step.feedback)
+                st.caption(f"Critic retries: {result.retries}")
 
     with right:
-        st.markdown('<div id="profile"></div><div class="hm-label">03 / Your profile</div>', unsafe_allow_html=True)
-        with st.container(border=True):
-            st.subheader("Your experience")
+        with st.container(border=True, key="profile-panel"):
+            st.header("Extracted profile")
             if result is None:
                 st.caption("Your extracted profile will appear here after a search. You can check your name before writing a letter.")
             else:
@@ -175,15 +188,17 @@ def main() -> None:
                     if values:
                         st.write(f"**{label}:** {', '.join(values)}")
         st.markdown('<div id="cover-letter"></div>', unsafe_allow_html=True)
-        with st.container(border=True):
-            st.markdown('<div class="hm-label">Cover letter studio</div>', unsafe_allow_html=True)
-            st.subheader("Make it personal")
+        with st.container(border=True, key="letter-panel"):
+            st.header("Cover letter studio")
             if not jobs:
                 st.caption("Choose a qualifying job after your search to create an editable draft from your resume.")
             else:
                 selected = st.selectbox("Choose a job for your cover letter", list(jobs),
                                         format_func=lambda job_id: f"{job_title_for_display(jobs[job_id])} ({job_id})")
-                if st.button("Write cover letter", use_container_width=True):
+                selected_title = job_title_for_display(jobs[selected])
+                if len(selected_title) > 38:
+                    st.caption(f"Selected: {selected_title}")
+                if st.button("Write cover letter", type="primary", use_container_width=True):
                     st.session_state.pop("letter", None)
                     st.session_state.pop("letter_job", None)
                     try:
@@ -191,10 +206,10 @@ def main() -> None:
                         def letter_progress(event):
                             attempt, total, phase = event["attempt"], event["total"], event["phase"]
                             if phase == "drafting":
-                                letter_bar.progress((attempt - 1) / total, text=f"Draft attempt {attempt} of up to {total}")
-                                letter_status.info("Building a draft from your profile and the job details.")
+                                letter_bar.progress((attempt - 1) / total, text="Drafting cover letter")
+                                letter_status.info("Connecting résumé examples to duties in the selected posting.")
                             elif phase == "checking":
-                                letter_status.info(f"Checking draft {attempt} for unsupported claims.")
+                                letter_status.info("Checking that the selected examples and duties exist in the source text.")
                             else:
                                 letter_bar.progress(1.0, text="Cover letter ready")
                                 letter_status.empty()
@@ -208,11 +223,7 @@ def main() -> None:
                 if st.session_state.get("letter_job") == selected and "letter" in st.session_state:
                     st.caption("Replace the bracketed contact details and review the draft before using it.")
                     st.text_area("Review and edit before sending", st.session_state.letter, height=300)
-        with st.container(border=True):
-            st.markdown('<div class="hm-label">Made for your review</div>', unsafe_allow_html=True)
-            st.caption("Matching happens locally. Confirm job requirements, location, licensing and current availability before applying.")
-
-    st.markdown('<div class="hm-footer">HIREMIND // LOCAL CAREER WORKSPACE</div>', unsafe_allow_html=True)
+    st.markdown('<footer class="hm-footer">HireMind · Matching runs on this device. Check the original posting for current availability.</footer>', unsafe_allow_html=True)
 
 
 if __name__ == "__main__":

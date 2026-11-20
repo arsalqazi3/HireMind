@@ -1,6 +1,6 @@
 # HireMind checklist
 
-Last updated: 2026-11-20
+Last updated: 2026-11-21
 
 Updated after every finished task. Steps follow the proposal (`HireMind_Proposal.pdf`).
 
@@ -36,10 +36,37 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Structured, editable cover letters use extracted applicant details and supported resume history
 - [x] Updated the Streamlit interface using the supplied design reference, including matching and letter progress indicators
 - [x] Ran five matching passes for each of five fictional resumes; the historical findings are in `reports/sample_qualification_2026-11-17.md`
+- [x] Added résumé evidence to candidate shortlisting and shared fallback queries while keeping the final result limit at five
+- [x] Separate required and preferred sections in job parsing and check résumé evidence for clearly named credential titles
+- [x] Added a paired dense-versus-shortlist retrieval comparison with judgment coverage and precision bounds
+- [x] Implemented a local LoRA trainer and a reproducible category-only Parser pilot using separate training and validation splits
+- [x] Trained the pilot for 40 steps and compared it against the base Parser on 10 separate validation résumés. Both matched 7 of 10 dataset categories
+- [x] Generated reproducible Searcher tool-selection demonstrations from the existing index using separate training and validation résumés
+- [x] Trained a 24-step Searcher adapter and checked tool actions on 12 additional validation profiles
+- [x] Generated 20,819 weak Critic training pairs and 4,456 validation pairs, then trained a 24-step Critic pilot
+- [x] Evaluated the Critic pilot on 12 independent pairs. The base model agreed more closely with the rule labels
+- [x] Completed standard matching for five fictional résumés and checked in-depth scoring on the data analyst sample
+- [x] Built a checkpointed A–E ablation runner, blind packet exporter, pooled scorer and grouped relevance calibration command
+- [x] Collected the 100-résumé held-out FAISS baseline and generated blind review packets for the baseline and the earlier retrieval comparison
+- [x] Evaluated the TF-IDF category baseline on all 373 held-out résumés: 61.1% accuracy and 0.537 macro F1
+- [x] Built weak full-profile Parser examples and grounded Writer template examples. Trained a four-role LoRA pilot locally
+- [x] Recorded a browser demo of the real upload, matching, score breakdown and editable cover-letter flow with a fictional résumé
+- [x] Ran all five ablation variants on a shared three-résumé validation pilot and exported its blind review packet
+- [x] Ran the component check on eight held-out résumés using dataset and rule targets, including the learned Writer's template check
+- [x] Merged the experimental adapter and benchmarked an identical short CPU generation with both checkpoints
+- [x] Prepared two independent blind workbooks for 272 validation pairs and added a reconciliation command that reports missing and conflicting judgments
+- [x] Added a résumé-grounded cover-letter skill and verified that one résumé yields different evidence for reporting and deployment jobs
+- [x] Benchmarked dense, BM25 and reciprocal rank fusion on all 372 validation résumés
+- [x] Added a reproducible CPU benchmark for full matching and cover-letter drafting, with per-phase timing and peak memory
+- [x] Added partial-study diagnostics, a fixed blind review batch and paired precision comparison
+- [x] Audited the live Writer before and after strengthening evidence links. All six fictional regression cases pass
+- [x] Compared sequential and batched CPU Critic inference using both checkpoint and float32 weights on eight fixed prompts
+- [x] Completed all 500 held-out A–E cases with zero recorded errors and exported 1,607 blind review pairs
+- [x] Completed the isolated CPU benchmark on three validation résumés. Each returned five jobs. Median matching time was 7m 51s and scoring accounted for 90% of the total time
 
 - [x] AI-drafted labels for all 115 pairs in `relevance_arslan.xlsx` (48 relevant, 67 not, 24 marked borderline), each with a reason, marked `AI draft`
 
-- [x] Switched inference from CPU to GPU for speed (Apple Silicon GPU on Hassaan's Mac, Colab GPU for training); CPU is no longer a target. The report must explain this change from the proposal
+- [x] Switched primary inference to Apple Silicon GPU for speed and retained CPU fallback. The report records GPU and CPU timings
 - [x] Parser and Critic prompts moved into `build_prompt` functions shared by the roles and the training data, so training matches inference
 - [x] Rule-based training data (`scripts/make_labels.py`), training and validation resumes only: 1,736 + 372 Parser examples and 20,832 + 2,232 Critic pairs (4 nearest, 4 same-category, 4 other-category jobs per resume). Uploaded to Drive `data/processed/training/`
 
@@ -51,53 +78,62 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [ ] Hassaan reviews the 115 AI-drafted suggestions in `relevance_hassaan.xlsx` and removes each `AI draft` marker after review
 - [ ] Arslan reviews the 115 AI-drafted labels in `relevance_arslan.xlsx` and removes each `AI draft` marker after review
 - [ ] Tune a relevance rule using reviewed labels, including how experience relates to job level
-- [ ] Expand validation beyond ten Parser examples and one full-agent resume, including human-reviewed recommendation quality and CPU time
+- [ ] Review recommendation quality on the expanded validation and held-out cohorts
 - [ ] Improve and independently validate Parser category accuracy; the prompt matched two of five noisy dataset labels on a separate small sample (`reports/validation_baseline.md`)
 - [ ] Improve Searcher stop/retry behavior; the base model repeated a query in the real-index smoke test
-- [ ] Measure GPU latency per resume on a controlled run (earlier CPU runs: about 17 minutes, then 6 minutes; Mac GPU sample runs: 50-111 seconds)
+- [ ] Reduce CPU scoring latency and repeat the isolated benchmark to measure the change
 - [ ] Evaluate the Critic's reasons and the Writer's structured, profile-grounded drafts with human reviewers
 - [ ] Calibrate the revised weighted scores and in-depth review against human-reviewed matches; the earlier fictional-resume runs predate these changes
+- [ ] Review pooled results from both retrieval strategies to measure precision at five with adequate judgment coverage
+- [ ] Prepare stronger labels for full profiles and validate any new adapter on a broader set before making it the default
+- [ ] Measure the Searcher adapter's effect on judged final rankings as well as tool-action validity
 
 ## Decisions for the team
 
 - [ ] Hand-check the categories of the 100 test resumes used for matching (recommended)
-- [ ] Decide how to fill missing experience levels (empty for 26.8% of the job pool)
+- [x] Audit missing experience levels. Only 414 of 2,684 have one clear title signal. Keep missing metadata unknown pending human validation
 - [ ] Hassaan reviews `docs/category_mapping.md` and `hiremind/skills.csv`
 
 ## To do
 
 ### Matching evaluation setup
 
-- [ ] Relevance rule (category, skills and level), with cut-offs tuned on the hand labels
+- [ ] Fit and review the relevance rule on human judgments once both classes are available
 - [ ] Score ablation A (FAISS only) on the test set
-- [ ] Evaluate the TF-IDF plus Logistic Regression category baseline on the held-out test split after development
 
 ### Training data (rule-based labels)
 
-- [ ] Improve Parser labels: years are found for only 12% of resumes (stated years only), roles for 75%, education for 70%; projects are always empty
-- [ ] Decide the Critic label weights with the reviewed relevance labels (now 4 points for same category, up to 6 for skill overlap)
-- [ ] Decide whether the Writer goes back to the model (proposal) or stays a template; only then make Writer examples
+- [x] Rule-based Parser labels: category, skills, years of experience, education, roles, projects
+- [x] Critic labels: about 20,000 resume and job pairs with a score out of 10 and a reason
+- [x] Rule-based Searcher agent and saved tool-selection training traces
+- [x] Writer examples from the grounded cover-letter template
+- [ ] Improve coverage of years, roles, education and projects in Parser training labels
+- [ ] Review Critic training label weights against human judgments
 
 ### Model
 
-- [ ] Confirm Qwen3-0.6B meets accuracy, GPU speed and memory requirements on representative inputs
-- [ ] Run `training/train_lora_colab.ipynb` on a Colab GPU and record the training time, token count and best validation loss
-- [ ] Load the adapter in `hiremind/slm.py` (not wired in yet) and compare the fine-tuned and base model on validation
-- [ ] Merge the LoRA weights if it helps CPU speed
+- [ ] Confirm Qwen3-0.6B meets accuracy, CPU speed and memory requirements on representative inputs
+- [x] Fine-tune a small four-role LoRA pilot and choose the checkpoint on validation using the local GPU
+- [ ] Run the larger Colab training workflow once label quality is established and record training time, token count and best validation loss
+- [ ] Decide whether the merged checkpoint improves full matching enough to justify its larger artifact
 
 ### Agent
 
 - [ ] Evaluate and improve the implemented roles and agent loop, including three-round retries, claim checks and memory ablations
-- [ ] Integrate and test the fine-tuned adapter in the model loader
+- [x] Integrated opt-in adapter loading and exercised it in the held-out evaluation
 
 ### App
 
-- [ ] Validate the Streamlit app end to end with real resumes; show steps live and improve progress during slow CPU inference
+- [x] Fix the macOS FAISS search stall and verify the real Streamlit app on CPU with one validation résumé, including live progress, scores and the editable letter
+- [x] Verify two-page text-based PDF parsing and browser upload, with recovery for unreadable, locked and textless PDFs
+- [x] Validate a text-based two-column PDF with a skills sidebar and preserve the reading order of a résumé with right-aligned dates
+- [x] Validate a two-page PDF with an experience column, skills sidebar, full-width sections and a wrapped project. Verify extracted evidence with the local Parser model
+- [x] Record CPU latency without the GPU study running
 
 ### Evaluation and report
 
-- [ ] Per-role evaluation on the test set (`evaluation/eval_tasks.py`)
-- [ ] Ablation versions B to E
-- [ ] Practical checks: CPU time, memory, model size, retries, unsupported claims in cover letters
-- [ ] Evaluation report
-- [ ] Final report and demo video
+- [ ] Broaden the held-out component check with verified full-profile and Critic reference labels
+- [ ] Obtain independent human judgments for the held-out A–E results. The exported packet has 1,607 pairs and no completed judgments
+- [x] Recorded CPU time, memory, model size, retries and cover-letter regression checks in the evaluation report
+- [x] Drafted the [evaluation report](reports/evaluation_2026-11-18.md) with completed run results
+- [ ] Complete the final report with reviewed ranking metrics

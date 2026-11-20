@@ -18,6 +18,15 @@ class Result:
     top_jobs: list[Judgement]
     steps: list[Step] = field(default_factory=list)  # shown in the app
     retries: int = 0
+    round_rankings: list[list[str]] = field(default_factory=list)
+
+
+def _rank_key(judgement: Judgement) -> tuple[float, float, float]:
+    breakdown = judgement.breakdown
+    if breakdown is None:
+        return judgement.score, 0, -1
+    experience = breakdown.experience if breakdown.experience is not None else -1
+    return judgement.score, breakdown.requirements or 0, experience
 
 
 def run(resume_text: str, use_critic: bool = True, use_episodic: bool = True,
@@ -35,6 +44,7 @@ def run(resume_text: str, use_critic: bool = True, use_episodic: bool = True,
     ranked: dict[str, Judgement] = {}
     scored_ids: set[str] = set()
     retries = 0
+    round_rankings = []
     for round_number in range(config.MAX_SEARCH_ROUNDS):
         report(phase="searching", round=round_number + 1)
         jobs = searcher.search(memory)
@@ -43,13 +53,11 @@ def run(resume_text: str, use_critic: bool = True, use_episodic: bool = True,
             if not jobs:
                 break
         if not jobs:
-            role = profile.roles[0] if profile.roles else profile.category.replace("-", " ")
-            options = [" ".join(" ".join([role, *skills]).split()[:8]) for skills in
-                       (profile.skills[:3], profile.skills[-3:], profile.skills[:1], [])]
             tried = {q.casefold() for q in memory.episodic.queries}
-            query = next((q for q in options if q and q.casefold() not in tried), "")
-            if query and query.casefold() not in tried:
-                found = tools.search_jobs(query)
+            query = next((q for q in searcher.profile_queries(profile) if q.casefold() not in tried), None)
+            if query:
+                excluded = memory.episodic.seen_job_ids | scored_ids if use_episodic else None
+                found = tools.shortlist_jobs(query, profile, excluded)
                 jobs = [job for job in found if not use_episodic or job.job_id not in memory.episodic.seen_job_ids]
                 if use_episodic:
                     memory.episodic.queries.append(query)
@@ -110,15 +118,29 @@ def run(resume_text: str, use_critic: bool = True, use_episodic: bool = True,
         else:
             ranked.update({job.job_id: Judgement(job.job_id, 0, "Retrieved by search; not scored.") for job in jobs})
             advice = None
+        round_rankings.append([j.job_id for j in sorted(ranked.values(), key=_rank_key, reverse=True)[:config.TOP_K]])
         if advice is None or round_number + 1 == config.MAX_SEARCH_ROUNDS:
             break
         if memory.use_episodic:
             memory.episodic.critic_feedback.append(advice)
-            memory.episodic.rejected.update({j.job_id: j.reason for j in judgements if j.score < config.CRITIC_CUTOFF})
+            eligible_ids = {j.job_id for j in eligible}
+            for judgement in judgements:
+                if judgement.job_id in eligible_ids:
+                    continue
+                breakdown = judgement.breakdown
+                job = jobs_by_id[judgement.job_id]
+                if matching.early_seniority_conflict(profile, job):
+                    failure = "Seniority conflicts with the early-career search."
+                elif breakdown.requirements < config.CRITIC_CUTOFF:
+                    failure = f"Requirements score {breakdown.requirements:g}/10 fell below the cutoff."
+                else:
+                    failure = f"Qualification score {breakdown.qualification:g}/10 fell below the cutoff."
+                memory.episodic.rejected[job.job_id] = f"{job.title[:100]}: {failure}"
         retries += 1
     report(phase="done")
-    return Result(profile, sorted(ranked.values(), key=lambda j: j.score, reverse=True)[:config.TOP_K], memory.short_term, retries)
+    return Result(profile, sorted(ranked.values(), key=_rank_key, reverse=True)[:config.TOP_K],
+                  memory.short_term, retries, round_rankings)
 
 
 def cover_letter(profile: Profile, job_id: str, progress=None) -> str:
-    return writer.write_checked(profile, tools.get_job_details(job_id), progress=progress)
+    return writer.write_personalized(profile, tools.get_job_details(job_id), progress=progress)

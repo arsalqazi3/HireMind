@@ -60,3 +60,18 @@ def test_faiss_only_returns_job_ids(jobs_csv, tmp_path, monkeypatch):
     built = job_index.build(jobs_csv, tmp_path / "index", embed_fn=fake_embed)
     monkeypatch.setattr(job_index, "embed", fake_embed)
     assert faiss_only("experienced cook", k=1, index=built) == ["101"]
+def test_macos_query_limits_faiss_threads_and_restores_them(monkeypatch):
+    from types import SimpleNamespace
+
+    threads = [4]
+    monkeypatch.setattr(job_index, "sys", SimpleNamespace(platform="darwin"))
+    monkeypatch.setattr(job_index.faiss, "omp_get_max_threads", lambda: threads[0])
+    monkeypatch.setattr(job_index.faiss, "omp_set_num_threads", lambda count: threads.__setitem__(0, count))
+
+    def search(query, k):
+        assert threads[0] == 1
+        return np.array([[0.75]]), np.array([[0]])
+
+    engine = job_index.JobIndex(SimpleNamespace(search=search), np.array(["job"]))
+    assert engine.search_vector(np.array([1.0]), k=1) == [("job", 0.75)]
+    assert threads[0] == 4

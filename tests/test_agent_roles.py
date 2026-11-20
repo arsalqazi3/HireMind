@@ -25,6 +25,16 @@ def test_parser_retries_when_category_is_not_supported(monkeypatch):
     assert parser.parse("Accountant with bookkeeping experience.").category == "ACCOUNTANT"
 
 
+def test_parser_keeps_literal_skills_after_malformed_output(monkeypatch):
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: "invalid")
+    profile = parser.parse("Used Python and SQL to prepare reports.")
+    assert profile.category == "UNKNOWN"
+    assert {"Python", "SQL"} <= set(profile.skills)
+    assert "unknown" not in searcher.profile_queries(profile)[0].casefold()
+    with pytest.raises(ValueError, match="enough résumé information"):
+        parser.parse("Hello")
+
+
 def test_critic_rejects_invalid_scores(monkeypatch):
     responses = iter(['{"score":8,"reason":"Relevant skills"}', '{"score":100,"reason":"invalid"}', 'invalid'])
     monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: next(responses))
@@ -76,6 +86,19 @@ def test_parser_recovers_literal_sections_when_model_returns_placeholders(monkey
     assert profile.education == ["Computer Science Degree, Example University"]
     assert profile.projects == ["Built a Python tool."]
     assert profile.category == "INFORMATION-TECHNOLOGY"
+
+
+def test_parser_recovers_alias_headings_and_preserves_wrapped_evidence(monkeypatch):
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"category":"ENGINEERING"}')
+    text = ("Alex Morgan\nProfessional Experience:\nReporting Analyst, Harbor Data\n"
+            "- Built a finance reporting dashboard\nand saved two hours each week.\n"
+            "Technical Skills\nPython and SQL\nCertifications\nData Analysis\n"
+            "Selected Projects\nDesigned an invoice dashboard\nand shared it with the team.\n"
+            "Volunteering\nOrganized community workshops.\n")
+    profile = parser.parse(text)
+    assert profile.roles == ["Reporting Analyst"]
+    assert profile.experience_evidence == ["Built a finance reporting dashboard and saved two hours each week."]
+    assert profile.projects == ["Designed an invoice dashboard and shared it with the team."]
 
 
 def test_personalized_letter_uses_resume_name_and_relevant_skills():

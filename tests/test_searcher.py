@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from hiremind import slm, tools
+from hiremind import config, slm, tools
 from hiremind.memory import Memory
 from hiremind.roles import searcher
 from hiremind.schemas import Job, Profile
@@ -15,7 +15,7 @@ def test_search_executes_action_and_stops(monkeypatch):
         '{"tool":"stop","arguments":{}}',
     ])
     monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: next(responses))
-    monkeypatch.setattr(tools, "search_jobs", lambda query: [job])
+    monkeypatch.setattr(tools, "shortlist_jobs", lambda *args: [job])
     memory = Memory(semantic=Profile("ACCOUNTANT", skills=["Excel"]))
     assert searcher.search(memory) == [job]
     assert memory.episodic.queries == ["accountant excel"]
@@ -32,7 +32,7 @@ def test_search_executes_action_and_stops(monkeypatch):
 ])
 def test_invalid_actions_are_not_executed(monkeypatch, response):
     monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: response)
-    monkeypatch.setattr(tools, "search_jobs", lambda **kwargs: pytest.fail("invalid action executed"))
+    monkeypatch.setattr(tools, "shortlist_jobs", lambda *args: pytest.fail("invalid action executed"))
     memory = Memory(semantic=Profile("ACCOUNTANT"))
     assert searcher.search(memory) == []
     assert memory.short_term[-1].action == "error"
@@ -49,7 +49,7 @@ def test_repeated_query_is_not_executed(monkeypatch):
 def test_repeated_query_stops_with_existing_candidates(monkeypatch):
     job = Job("1", "Accountant", "Work", "ACCOUNTANT")
     monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"tool":"search_jobs","arguments":{"query":"accountant"}}')
-    monkeypatch.setattr(tools, "search_jobs", lambda query: [job])
+    monkeypatch.setattr(tools, "shortlist_jobs", lambda *args: [job])
     memory = Memory(semantic=Profile("ACCOUNTANT"))
     assert searcher.search(memory) == [job]
     assert [step.action for step in memory.short_term] == ["search_jobs", "stop"]
@@ -68,7 +68,7 @@ def test_retry_uses_alternative_query_after_repeat(monkeypatch):
     job = Job("2", "Developer", "", "INFORMATION-TECHNOLOGY")
     monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"tool":"search_jobs","arguments":{"query":"developer"}}')
     queries = []
-    monkeypatch.setattr(tools, "search_jobs", lambda query: queries.append(query) or [job])
+    monkeypatch.setattr(tools, "shortlist_jobs", lambda query, *_: queries.append(query) or [job])
     memory = Memory(semantic=Profile("INFORMATION-TECHNOLOGY", skills=["Python"], roles=["Software Engineer"]))
     memory.episodic.queries.append("developer")
     assert searcher.search(memory) == [job]
@@ -81,3 +81,22 @@ def test_applicant_name_alone_is_not_used_as_job_query(monkeypatch):
     memory = Memory(semantic=Profile("IT", name="Taylor Ahmed"))
     with pytest.raises(ValueError, match="applicant name"):
         searcher.next_action(memory)
+
+
+def test_shortlist_promotes_evidenced_jobs_beyond_dense_cutoff(monkeypatch):
+    matches = [Job(str(i), "Team Lead", "", "OTHER") for i in range(20)]
+    wanted = Job("fit", "Data Analyst", "", "IT", ["SQL"])
+    seen = Job("seen", "Data Analyst", "", "IT", ["SQL"])
+    senior = Job("senior", "Senior Data Analyst", "", "IT", ["SQL"])
+
+    class Index:
+        def search(self, query, k):
+            return ([("seen", 0.8), ("senior", 0.75)] + [(job.job_id, 0.60) for job in matches] + [("fit", 0.55)])[:k]
+
+    monkeypatch.setattr(tools, "_index", Index)
+    monkeypatch.setattr(tools, "_jobs", lambda: {job.job_id: job for job in [*matches, wanted, seen, senior]})
+    profile = Profile("IT", skills=["sql"], roles=["Data Analyst"], early_career=True)
+    shortlist = tools.shortlist_jobs("analytics", profile, {"seen"})
+    assert shortlist[0] == wanted
+    assert seen not in shortlist and senior not in shortlist
+    assert len(shortlist) == config.REVIEW_LIMIT

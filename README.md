@@ -2,8 +2,8 @@
 
 A self-correcting job-matching agent. It takes an English resume, finds up to five
 jobs that fit it best with a reason for each, and writes a cover letter for the
-one you pick. The prototype uses a local small language model (SLM) and a
-structured letter template on a laptop, with no external AI API. On supported Apple Silicon Macs the
+one you pick. The prototype uses a local small language model (SLM) on a
+laptop, with no external AI API. On supported Apple Silicon Macs the
 model uses the Metal GPU; it falls back to the CPU when unavailable. Set
 `HIREMIND_DEVICE=cpu` to force CPU inference.
 
@@ -12,18 +12,24 @@ Muhammad Hassaan (23K-0603) and Arslan Asad (23I-2505).
 
 ## How it works
 
-The planned system uses one SLM fine-tuned with LoRA across four roles. The
-current prototype uses the base SLM for the first three and a structured
-template for the Writer; fine-tuning remains future work:
+The current prototype uses the local base model across four roles. Dedicated
+and mixed LoRA adapters are available for experiments:
 
-1. **Parser** turns the resume into a JSON profile.
+1. **Parser** turns the resume into a JSON profile. If the model repeatedly
+   returns unusable output, the Parser can continue with résumé evidence
+   from the rules and leave the category unknown.
 2. **Searcher** runs a ReAct loop over four tools (`search_jobs`, `filter_jobs`,
    `get_job_details`, `skill_overlap`), at most three search rounds.
+   Each query retrieves up to 100 semantically similar jobs before shortlisting
+   up to 20 using résumé role titles, skills and category evidence. Known
+   seniority and credential conflicts can be screened before model scoring.
 3. **Critic** scores each job out of 10. If the best score is under the cutoff
    (starts at 6), it sends feedback to the Searcher.
-4. **Writer** assembles an editable business-style cover letter from the job
-   title and extracted profile facts. The user must fill in contact details
-   and review the draft before using it.
+4. **Writer** loads [its cover-letter skill](hiremind/skills/cover-letter/SKILL.md)
+   for each draft. The local model selects links between résumé examples and
+   specific job duties or skills. HireMind checks the selected IDs and assembles
+   the letter from the original facts, with an evidence-based fallback when
+   model output is unavailable or invalid. Contact details remain editable.
 
 Memory: semantic (the profile), episodic (queries tried, job ids seen, rejection
 reasons, Critic feedback) and short-term (the current run).
@@ -74,6 +80,8 @@ posting describes a junior role; titles can be wrong, so this is a heuristic.
 Some clearly named core tools in job titles or explicit requirements are also
 checked against the extracted profile. The tool list and wording detection are
 incomplete; missing from a resume does not prove the applicant lacks a skill.
+The matcher checks a small set of clear credential titles, including CPA, RN,
+LPN/LVN and CNA, for corresponding résumé evidence. It cannot verify licensing.
 
 The requirements score starts with the local model's assessment and is adjusted
 using detected skills and category evidence. Experience uses stated durations
@@ -89,6 +97,89 @@ experience, and preferences when supporting data exists. Invalid focused output
 falls back to the available standard assessment. These model and rule scores are
 experimental, not calibrated probabilities, and the historical postings,
 eligibility and qualifications require human review.
+
+## Validate retrieval and try the Parser adapter
+
+Compare dense FAISS search with the new shortlist using the same query per
+validation résumé:
+
+```bash
+python -m evaluation.retrieval
+```
+
+The runner writes IDs and summary metrics to `outputs/retrieval_validation.json`.
+It calculates judgment coverage and precision bounds once reviewed labels have
+been imported. Category agreement is logged as a separate diagnostic.
+
+The LoRA trainer accepts separate JSONL files with `task`, `prompt` and
+`completion` fields. The following pilot uses category labels from the current
+dataset and trains only the beginning of the Parser's answer:
+
+```bash
+python -m scripts.make_parser_pilot
+python -m training.train_pilot_lora --train outputs/parser_lora/train.jsonl \
+  --validation outputs/parser_lora/val.jsonl --output models/parser-lora-pilot \
+  --epochs 1 --max-steps 40 --max-tokens 1280
+python -m scripts.validate_parser --adapter models/parser-lora-pilot \
+  --exclude-ids outputs/parser_lora/used_ids.txt
+```
+
+To try a compatible adapter in the app, set `HIREMIND_ADAPTER_DIR` to its
+directory. The Parser is the default adapter target. Set
+`HIREMIND_ADAPTER_ROLES` to a comma-separated list for a multi-role adapter.
+Run `python -m scripts.make_pilot_searcher_traces` to generate separate training and
+validation examples for Searcher tool selection using the existing job index.
+Train on those JSONL files with the same LoRA command, then run
+`python -m evaluation.eval_tasks --adapter models/searcher-lora-pilot --exclude-traces outputs/searcher_traces`.
+Run `python -m scripts.make_pilot_critic_labels` to build weak Critic training labels from
+the existing résumé splits and job index. These labels are for training.
+Use reviewed labels for ranking evaluation.
+
+Build and evaluate a mixed pilot after generating Searcher and Critic examples:
+
+```bash
+python -m scripts.make_joint_training --train-per-role 16 --val-per-role 6
+python -m training.train_pilot_lora --train outputs/joint_training/train.jsonl \
+  --validation outputs/joint_training/val.jsonl --output models/joint-lora-pilot \
+  --epochs 2 --max-steps 64 --max-tokens 1280
+python -m evaluation.role_benchmark --adapter models/joint-lora-pilot \
+  --output outputs/joint_heldout_roles.json
+```
+
+The role benchmark compares a free-writing adapter with the original
+deterministic template. The live app uses the validated evidence-selection
+workflow described above.
+
+### Matching ablations
+
+Collect the same résumé cohort for every version. Each completed résumé is
+checkpointed, so repeating a command continues from the saved results.
+
+```bash
+python -m evaluation.ablation collect --split val --limit 3 --versions A B C D E \
+  --adapter models/joint-lora-pilot --output outputs/ablation_val.json
+python -m evaluation.ablation packet outputs/ablation_val.json outputs/ablation_review
+python -m evaluation.ablation score outputs/ablation_val.json outputs/ablation_review/labels.csv
+```
+
+Exact ranking metrics use the common fully judged cohort. The packet and its
+source text stay local. See `docs/relevance_labelling.md` for the review criteria.
+
+For a 100-résumé held-out run, `scripts.run_ablation_study` runs each variant
+in a fresh process and shares a single time budget:
+
+```bash
+python -m scripts.run_ablation_study --adapter models/joint-lora-pilot \
+  --output outputs/ablation_test_joint.json --packet outputs/ablation_test_joint_review --hours 5
+python -m evaluation.ablation status outputs/ablation_test_joint.json
+python -m evaluation.ablation diagnostics outputs/ablation_test_joint.json
+```
+
+Reuse the snapshot path to resume a run. Use a new packet directory when
+exporting again so existing judgments are preserved.
+Diagnostics include result counts, success and retry counts, median and
+90th-percentile times, and category agreement on shared completed cases.
+See `docs/relevance_labelling.md` to freeze a smaller cohort for blind review.
 
 ## Pipeline
 

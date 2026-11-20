@@ -4,10 +4,12 @@ Run: python -m scripts.evaluate_samples --runs 5
 Outputs are local and git-ignored; never use private resumes without consent.
 """
 import argparse
+from contextlib import nullcontext
 from dataclasses import asdict
 import json
 from pathlib import Path
 from time import perf_counter
+from unittest.mock import patch
 
 from hiremind import agent, config, slm, tools
 
@@ -15,6 +17,9 @@ from hiremind import agent, config, slm, tools
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--runs", type=int, default=5)
+    parser.add_argument("--dense-baseline", action="store_true", help="Use the previous dense-only shortlist")
+    parser.add_argument("--sample", action="append", help="Limit runs to a sample filename, repeatable")
+    parser.add_argument("--in-depth", action="store_true", help="Run separate assessments where the evidence permits")
     parser.add_argument("--output", type=Path, default=config.ROOT / "outputs" / "sample_evaluation.json")
     args = parser.parse_args()
     if args.runs < 1:
@@ -24,6 +29,11 @@ def main():
     example = samples_dir / "test_resume.txt"
     if example.is_file():
         files.append(example)
+    if args.sample:
+        selected = set(args.sample)
+        files = [path for path in files if path.name in selected]
+        if selected != {path.name for path in files}:
+            parser.error("--sample must name an existing fictional sample")
     if not files:
         parser.error("Add fictional sample_*.txt files or test_resume.txt to data/samples first")
     results = []
@@ -34,13 +44,18 @@ def main():
             start = perf_counter()
             print(f"Starting {path.name} run {run_no}/{args.runs}", flush=True)
             try:
-                result = agent.run(text)
+                retrieval = patch.object(tools, "shortlist_jobs", side_effect=lambda query, *_: tools.search_jobs(query)) if args.dense_baseline else nullcontext()
+                with retrieval:
+                    result = agent.run(text, in_depth=args.in_depth)
                 jobs = []
                 for judgment in result.top_jobs:
                     job = tools.get_job_details(judgment.job_id)
                     jobs.append({"job_id": job.job_id, "title": job.title, "score": judgment.score,
-                                 "reason": judgment.reason, "level": job.level})
+                                 "reason": judgment.reason, "level": job.level,
+                                 "breakdown": asdict(judgment.breakdown) if judgment.breakdown else None})
                 entry = {"file": path.name, "run": run_no, "seconds": round(perf_counter() - start, 2),
+                         "retrieval": "dense" if args.dense_baseline else "shortlist",
+                         "in_depth": args.in_depth,
                          "profile": asdict(result.profile), "jobs": jobs, "retries": result.retries,
                          "steps": [asdict(s) for s in result.steps],
                          "letter": agent.cover_letter(result.profile, jobs[0]["job_id"]) if jobs else None,

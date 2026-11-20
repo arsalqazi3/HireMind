@@ -7,19 +7,34 @@ import json
 import re
 from dataclasses import asdict
 
-from hiremind import slm, tools
+from hiremind import config, slm, tools
 from hiremind.memory import Memory
-from hiremind.schemas import Job, Step
+from hiremind.schemas import Job, Profile, Step
+
+
+def profile_queries(profile: Profile) -> list[str]:
+    """Provide distinct fallback queries from the roles, field and résumé skills."""
+    category = "" if profile.category == config.UNKNOWN_CATEGORY else profile.category.replace("-", " ")
+    roles = [role for role in profile.roles[:4] if re.search(r"\w", role)]
+    roles = roles or [category]
+    options = [[role, *profile.skills[:3]] for role in [*roles, category]]
+    options.extend(([roles[0], *profile.skills[-3:]], [roles[0]]))
+    queries = {}
+    for terms in options:
+        query = " ".join(" ".join(terms).split()[:8])
+        if re.search(r"\w", query):
+            queries.setdefault(query.casefold(), query)
+    return list(queries.values())
 
 
 def build_prompt(memory: Memory) -> str:
-    """The Searcher prompt for the current memory. Training traces use the same
-    text (scripts/make_searcher_traces.py)."""
+    """Build the prompt shared by inference and training examples."""
     if memory.semantic is None:
         raise ValueError("A profile is required before searching")
     state = {"profile": asdict(memory.semantic)}
     if memory.use_episodic:
         state.update(queries=memory.episodic.queries, feedback=memory.episodic.critic_feedback)
+        state["recent_rejections"] = list(memory.episodic.rejected.values())[-4:]
     state["recent_steps"] = [asdict(step) for step in memory.short_term[-4:]]
     prompt = (
         'Choose the next search action. Return only JSON with "tool" and "arguments". '
@@ -42,8 +57,7 @@ def build_prompt(memory: Memory) -> str:
 
 def next_action(memory: Memory) -> tuple[str, dict]:
     """Ask the SLM for the next tool name and its arguments, or ("stop", {})."""
-    prompt = build_prompt(memory)
-    answer = slm.generate("searcher", prompt, max_new_tokens=128).strip()
+    answer = slm.generate("searcher", build_prompt(memory), max_new_tokens=128).strip()
     try:
         action = json.loads(answer.removeprefix("```json").removesuffix("```").strip())
         name, args = action["tool"], action["arguments"]
@@ -80,7 +94,8 @@ def search(memory: Memory) -> list[Job]:
                 memory.short_term.append(Step(state={}, action=name, args=args))
                 break
             if name == "search_jobs":
-                found = tools.search_jobs(**args)
+                excluded = memory.episodic.seen_job_ids if memory.use_episodic else None
+                found = tools.shortlist_jobs(args["query"], memory.semantic, excluded)
                 if memory.use_episodic:
                     memory.episodic.queries.append(args["query"])
                     found = [job for job in found if job.job_id not in memory.episodic.seen_job_ids]
@@ -99,12 +114,10 @@ def search(memory: Memory) -> list[Job]:
         except (ValueError, KeyError) as exc:
             if str(exc) == "Repeated search query" and not candidates and memory.semantic:
                 profile = memory.semantic
-                options = [" ".join(" ".join([role, *profile.skills[:3]]).split()[:8]) for role in profile.roles]
-                options.append(" ".join(" ".join([profile.category.replace("-", " "), *profile.skills[:3]]).split()[:8]))
                 tried = {" ".join(q.split()).casefold() for q in memory.episodic.queries}
-                query = next((q for q in options if re.search(r"\w", q) and q.casefold() not in tried), None)
+                query = next((q for q in profile_queries(profile) if q.casefold() not in tried), None)
                 if query:
-                    found = tools.search_jobs(query)
+                    found = tools.shortlist_jobs(query, profile, memory.episodic.seen_job_ids)
                     memory.episodic.queries.append(query)
                     candidates = [job for job in found if job.job_id not in memory.episodic.seen_job_ids]
                     memory.episodic.seen_job_ids.update(job.job_id for job in candidates)

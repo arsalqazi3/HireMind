@@ -177,3 +177,50 @@ def test_early_career_unknown_years_does_not_read_as_satisfying_year_requirement
     result = matching.score_weighted(p, j, 7)
     assert result.breakdown.qualification < 6
     assert "actual total years remain unknown" in result.reason
+
+
+def test_job_requirements_exclude_optional_skills_and_include_multiple_sections():
+    posting = (
+        "Basic Qualifications\nSQL and two years of experience.\n"
+        "Preferred Qualifications:\nFive years of experience with Java.\n"
+        "What You'll Bring:\nExcel and data analysis.\nBenefits:\nPaid time off."
+    )
+    required = matching._requirements(posting)
+    assert "SQL" in required and "Excel" in required
+    assert "Java" not in required and "Paid time off" not in required
+    assert matching._experience_years(required) == 2
+
+
+def test_title_credentials_keep_unsubstantiated_roles_below_the_cutoff():
+    profile = Profile("HEALTHCARE", skills=["Registered nursing"])
+    jobs = [
+        Job("1", "Licensed Practical Nurse", "", "HEALTHCARE"),
+        Job("2", "Travel Nurse RN", "", "HEALTHCARE"),
+        Job("3", "RN or LPN", "", "HEALTHCARE"),
+    ]
+    judgements = [matching.score_weighted(profile, job, 9) for job in jobs]
+    assert judgements[0].breakdown.requirements < 6
+    assert "LPN/LVN" in judgements[0].reason
+    assert [j.breakdown.requirements for j in judgements[1:]] == [9, 9]
+
+
+def test_general_javascript_does_not_satisfy_an_ext_js_or_salesforce_title():
+    profile = Profile("IT", skills=["JavaScript"])
+    assert matching.missing_core_tools(profile, Job("1", "EXT JS Developer", "", "IT")) == ["Ext JS"]
+    assert matching.missing_core_tools(profile, Job("2", "Salesforce Developer", "", "IT")) == ["Salesforce"]
+
+
+def test_total_experience_does_not_establish_pediatric_experience():
+    profile = Profile("HEALTHCARE", years_experience=5, roles=["Registered Nurse"])
+    job = Job("1", "Registered Nurse", "2 Year minimum of pediatric acute care experience", "HEALTHCARE")
+    result = matching.score_weighted(profile, job, 8)
+    assert result.breakdown.experience is None
+    assert "cannot establish time in that specialty" in result.reason
+
+
+def test_total_experience_does_not_establish_years_with_a_named_tool():
+    profile = Profile("IT", years_experience=5, skills=["Tableau"])
+    job = Job("1", "Tableau Consultant", "3+ years experience with implementing Tableau solutions.", "IT")
+    result = matching.score_weighted(profile, job, 8)
+    assert result.breakdown.experience is None
+    assert "specific role or skill" in result.reason

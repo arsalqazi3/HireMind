@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+import sys
 
 import faiss
 import numpy as np
@@ -42,7 +43,18 @@ class JobIndex:
 
     def search_vector(self, vector: np.ndarray, k: int = config.TOP_K) -> list[tuple[str, float]]:
         """Return up to k (job_id, cosine similarity) pairs, best first."""
-        scores, positions = self.index.search(vector.reshape(1, -1).astype("float32"), k)
+        query = vector.reshape(1, -1).astype("float32")
+        if sys.platform == "darwin":
+            # When called from a Streamlit worker, the FAISS OpenMP team can
+            # hang after PyTorch inference. This is a single-query search.
+            threads = faiss.omp_get_max_threads()
+            faiss.omp_set_num_threads(1)
+            try:
+                scores, positions = self.index.search(query, k)
+            finally:
+                faiss.omp_set_num_threads(threads)
+        else:
+            scores, positions = self.index.search(query, k)
         return [(str(self.job_ids[p]), float(s)) for p, s in zip(positions[0], scores[0]) if p != -1]
 
     def search(self, text: str, k: int = config.TOP_K) -> list[tuple[str, float]]:
