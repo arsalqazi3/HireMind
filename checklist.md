@@ -39,6 +39,10 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 - [x] AI-drafted labels for all 115 pairs in `relevance_arslan.xlsx` (48 relevant, 67 not, 24 marked borderline), each with a reason, marked `AI draft`
 
+- [x] Switched inference from CPU to GPU for speed (Apple Silicon GPU on Hassaan's Mac, Colab GPU for training); CPU is no longer a target. The report must explain this change from the proposal
+- [x] Parser and Critic prompts moved into `build_prompt` functions shared by the roles and the training data, so training matches inference
+- [x] Rule-based training data (`scripts/make_labels.py`), training and validation resumes only: 1,736 + 372 Parser examples and 20,832 + 2,232 Critic pairs (4 nearest, 4 same-category, 4 other-category jobs per resume). Uploaded to Drive `data/processed/training/`
+
 ## In progress
 
 - [ ] Hassaan reviews the 115 AI-drafted suggestions in `relevance_hassaan.xlsx` and removes each `AI draft` marker after review
@@ -47,7 +51,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [ ] Expand validation beyond ten Parser examples and one full-agent resume, including human-reviewed recommendation quality and CPU time
 - [ ] Improve and independently validate Parser category accuracy; the prompt matched two of five noisy dataset labels on a separate small sample (`reports/validation_baseline.md`)
 - [ ] Improve Searcher stop/retry behavior; the base model repeated a query in the real-index smoke test
-- [ ] Further reduce and measure real CPU latency; one validation run improved from about 17 minutes to 6 minutes with Apple Silicon threading, under different background activity (`reports/validation_baseline.md`)
+- [ ] Measure GPU latency per resume on a controlled run (earlier CPU runs: about 17 minutes, then 6 minutes; Mac GPU sample runs: 50-111 seconds)
 - [ ] Evaluate the Critic's reasons and the Writer's structured, profile-grounded drafts with human reviewers
 - [ ] Calibrate the revised weighted scores and in-depth review against human-reviewed matches; the earlier fictional-resume runs predate these changes
 
@@ -67,14 +71,15 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 ### Training data (rule-based labels)
 
-- [ ] Parser labels: category, skills, years of experience, education, roles, projects
-- [ ] Critic labels: about 20,000 resume and job pairs with a score out of 10 and a reason
+- [ ] Improve Parser labels: years are found for only 12% of resumes (stated years only), roles for 75%, education for 70%; projects are always empty
+- [ ] Decide the Critic label weights with the reviewed relevance labels (now 4 points for same category, up to 6 for skill overlap)
 - [ ] Rule-based Searcher agent, and its saved steps as training traces
-- [ ] Writer examples from cover letter templates
+- [ ] Decide whether the Writer goes back to the model (proposal) or stays a template; only then make Writer examples
 
 ### Model
 
-- [ ] Confirm Qwen3-0.6B meets accuracy, CPU speed and memory requirements on representative inputs
+- [ ] Confirm Qwen3-0.6B meets accuracy, GPU speed and memory requirements on representative inputs
+- [ ] Colab LoRA notebook: sample the Critic data (about 25M tokens in full, too much for free Colab), train Parser and Critic, pick the checkpoint on validation
 - [ ] Fine-tune all four roles with LoRA on Colab, choosing the checkpoint on validation
 - [ ] Merge the LoRA weights if it helps CPU speed
 

@@ -7,12 +7,17 @@ from hiremind import config, slm
 from hiremind.schemas import Job, Judgement, Profile
 
 
+def build_prompt(profile: Profile, job: Job) -> str:
+    """The Critic prompt. Training examples use the same text (scripts/make_labels.py)."""
+    return ('Assess only the match between the profile and job duties, required skills and qualifications. Do not score salary, location, benefits or years of experience. Return a JSON object with a numeric "score" from 0 to 10 '
+            'and a "reason" explaining the actual matching skills and any gaps. Do not invent qualifications.\nProfile: ' + json.dumps(asdict(profile), ensure_ascii=False)
+            + '\nJob: ' + json.dumps(asdict(job), ensure_ascii=False))
+
+
 def judge(profile: Profile, jobs: list[Job]) -> list[Judgement]:
     judgements = []
     for job in jobs:
-        prompt = ('Assess only the match between the profile and job duties, required skills and qualifications. Do not score salary, location, benefits or years of experience. Return a JSON object with a numeric "score" from 0 to 10 '
-                  'and a "reason" explaining the actual matching skills and any gaps. Do not invent qualifications.\nProfile: ' + json.dumps(asdict(profile), ensure_ascii=False)
-                  + '\nJob: ' + json.dumps(asdict(job), ensure_ascii=False))
+        prompt = build_prompt(profile, job)
         answer = slm.generate("critic", prompt, max_new_tokens=200).strip()
         try:
             result = json.loads(answer.removeprefix("```json").removesuffix("```").strip())

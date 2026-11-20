@@ -40,14 +40,19 @@ def read_resume(path: str) -> str:
     return text
 
 
+def build_prompt(resume_text: str) -> str:
+    """The Parser prompt. Training examples use the same text (scripts/make_labels.py)."""
+    return ('Extract a resume profile as JSON with category, years_experience, education, roles and projects. '
+            'Use null for unknown years and arrays of exact resume phrases for education, roles and projects.\nResume:\n' + resume_text
+            + '\nChoose the best category from this list only: ' + ', '.join(config.CATEGORIES) + '.')
+
+
 def parse(resume_text: str) -> Profile:
     """Ask the SLM for JSON with category, skills, years of experience,
     education, roles and projects. Retry once if the JSON is not valid."""
     if not resume_text.strip():
         raise ValueError("Resume text is empty")
-    prompt = ('Extract a resume profile as JSON with category, years_experience, education, roles and projects. '
-              'Use null for unknown years and arrays of exact resume phrases for education, roles and projects.\nResume:\n' + resume_text
-              + '\nChoose the best category from this list only: ' + ', '.join(config.CATEGORIES) + '.')
+    prompt = build_prompt(resume_text)
     for _ in range(2):
         answer = slm.generate("parser", prompt, max_new_tokens=512).strip()
         try:
