@@ -1,6 +1,6 @@
 # HireMind checklist
 
-Last updated: 2026-11-18
+Last updated: 2026-11-20
 
 Updated after every finished task. Steps follow the proposal (`HireMind_Proposal.pdf`).
 
@@ -37,10 +37,12 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Updated the Streamlit interface using the supplied design reference, including matching and letter progress indicators
 - [x] Ran five matching passes for each of five fictional resumes; the historical findings are in `reports/sample_qualification_2026-11-17.md`
 
+- [x] AI-drafted labels for all 115 pairs in `relevance_arslan.xlsx` (48 relevant, 67 not, 24 marked borderline), each with a reason, marked `AI draft`
+
 ## In progress
 
-- [ ] Arslan labels `relevance_arslan.xlsx` (115 pairs)
 - [ ] Hassaan reviews the 115 AI-drafted suggestions in `relevance_hassaan.xlsx` and removes each `AI draft` marker after review
+- [ ] Arslan reviews the 115 AI-drafted labels in `relevance_arslan.xlsx` and removes each `AI draft` marker after review
 - [ ] Tune a relevance rule using reviewed labels, including how experience relates to job level
 - [ ] Expand validation beyond ten Parser examples and one full-agent resume, including human-reviewed recommendation quality and CPU time
 - [ ] Improve and independently validate Parser category accuracy; the prompt matched two of five noisy dataset labels on a separate small sample (`reports/validation_baseline.md`)
