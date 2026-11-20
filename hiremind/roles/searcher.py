@@ -12,8 +12,9 @@ from hiremind.memory import Memory
 from hiremind.schemas import Job, Step
 
 
-def next_action(memory: Memory) -> tuple[str, dict]:
-    """Ask the SLM for the next tool name and its arguments, or ("stop", {})."""
+def build_prompt(memory: Memory) -> str:
+    """The Searcher prompt for the current memory. Training traces use the same
+    text (scripts/make_searcher_traces.py)."""
     if memory.semantic is None:
         raise ValueError("A profile is required before searching")
     state = {"profile": asdict(memory.semantic)}
@@ -36,6 +37,12 @@ def next_action(memory: Memory) -> tuple[str, dict]:
             'Replace "job and skills" with a search query of at most 8 words. '
             'Do not repeat words or include an explanation.\nProfile:\n' + json.dumps(state["profile"], ensure_ascii=False)
         )
+    return prompt
+
+
+def next_action(memory: Memory) -> tuple[str, dict]:
+    """Ask the SLM for the next tool name and its arguments, or ("stop", {})."""
+    prompt = build_prompt(memory)
     answer = slm.generate("searcher", prompt, max_new_tokens=128).strip()
     try:
         action = json.loads(answer.removeprefix("```json").removesuffix("```").strip())

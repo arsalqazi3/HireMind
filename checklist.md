@@ -43,6 +43,9 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Parser and Critic prompts moved into `build_prompt` functions shared by the roles and the training data, so training matches inference
 - [x] Rule-based training data (`scripts/make_labels.py`), training and validation resumes only: 1,736 + 372 Parser examples and 20,832 + 2,232 Critic pairs (4 nearest, 4 same-category, 4 other-category jobs per resume). Uploaded to Drive `data/processed/training/`
 
+- [x] Searcher prompt moved into `searcher.build_prompt`; rule-based Searcher traces (`scripts/make_searcher_traces.py`): 5,259 training and 1,084 validation decisions (search, filter, stop), 19% of resumes needing more than one round. Uploaded to Drive
+- [x] LoRA training script (`training/train_lora.py`) and Colab notebook (`training/train_lora_colab.ipynb`): formats examples exactly like inference, masks the prompt from the loss, samples 6,000 Critic pairs, keeps the checkpoint with the lowest validation loss. Tested end to end on a tiny random model on CPU; not yet run on Colab
+
 ## In progress
 
 - [ ] Hassaan reviews the 115 AI-drafted suggestions in `relevance_hassaan.xlsx` and removes each `AI draft` marker after review
@@ -73,14 +76,13 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 - [ ] Improve Parser labels: years are found for only 12% of resumes (stated years only), roles for 75%, education for 70%; projects are always empty
 - [ ] Decide the Critic label weights with the reviewed relevance labels (now 4 points for same category, up to 6 for skill overlap)
-- [ ] Rule-based Searcher agent, and its saved steps as training traces
 - [ ] Decide whether the Writer goes back to the model (proposal) or stays a template; only then make Writer examples
 
 ### Model
 
 - [ ] Confirm Qwen3-0.6B meets accuracy, GPU speed and memory requirements on representative inputs
-- [ ] Colab LoRA notebook: sample the Critic data (about 25M tokens in full, too much for free Colab), train Parser and Critic, pick the checkpoint on validation
-- [ ] Fine-tune all four roles with LoRA on Colab, choosing the checkpoint on validation
+- [ ] Run `training/train_lora_colab.ipynb` on a Colab GPU and record the training time, token count and best validation loss
+- [ ] Load the adapter in `hiremind/slm.py` (not wired in yet) and compare the fine-tuned and base model on validation
 - [ ] Merge the LoRA weights if it helps CPU speed
 
 ### Agent
