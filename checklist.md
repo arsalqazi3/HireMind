@@ -1,6 +1,6 @@
 # HireMind checklist
 
-Last updated: 2026-11-21
+Last updated: 2026-11-23
 
 Updated after every finished task. Steps follow the proposal (`HireMind_Proposal.pdf`).
 
@@ -70,7 +70,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Parser and Critic prompts moved into `build_prompt` functions shared by the roles and the training data, so training matches inference
 - [x] Rule-based training data (`scripts/make_labels.py`), training and validation resumes only: 1,736 + 372 Parser examples and 20,832 + 2,232 Critic pairs (4 nearest, 4 same-category, 4 other-category jobs per resume). Uploaded to Drive `data/processed/training/`
 
-- [x] Searcher prompt moved into `searcher.build_prompt`; rule-based Searcher traces (`scripts/make_searcher_traces.py`): 5,259 training and 1,084 validation decisions (search, filter, stop), 19% of resumes needing more than one round. Uploaded to Drive
+- [x] Searcher prompt moved into `searcher.build_prompt`; rule-based Searcher traces (`scripts/make_searcher_traces.py`), regenerated on 2026-11-23 to follow the updated agent loop (shortlist search, remembered rejections, the fewer-than-five retry): 7,574 training and 1,586 validation decisions, 52% of resumes needing more than one round. Uploaded to Drive
 - [x] LoRA training script (`training/train_lora.py`) and Colab notebook (`training/train_lora_colab.ipynb`): formats examples exactly like inference, masks the prompt from the loss, samples 6,000 Critic pairs, keeps the checkpoint with the lowest validation loss. Tested end to end on a tiny random model on CPU; not yet run on Colab
 
 ## In progress
