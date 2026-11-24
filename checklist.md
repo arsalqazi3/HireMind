@@ -1,6 +1,6 @@
 # HireMind checklist
 
-Last updated: 2026-11-23
+Last updated: 2026-11-24
 
 Updated after every finished task. Steps follow the proposal (`HireMind_Proposal.pdf`).
 
@@ -71,7 +71,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Rule-based training data (`scripts/make_labels.py`), training and validation resumes only: 1,736 + 372 Parser examples and 20,832 + 2,232 Critic pairs (4 nearest, 4 same-category, 4 other-category jobs per resume). Uploaded to Drive `data/processed/training/`
 
 - [x] Searcher prompt moved into `searcher.build_prompt`; rule-based Searcher traces (`scripts/make_searcher_traces.py`), regenerated on 2026-11-23 to follow the updated agent loop (shortlist search, remembered rejections, the fewer-than-five retry): 7,574 training and 1,586 validation decisions, 52% of resumes needing more than one round. Uploaded to Drive
-- [x] LoRA training script (`training/train_lora.py`) and Colab notebook (`training/train_lora_colab.ipynb`): formats examples exactly like inference, masks the prompt from the loss, samples 6,000 Critic pairs, keeps the checkpoint with the lowest validation loss. Tested end to end on a tiny random model on CPU; not yet run on Colab
+- [x] LoRA training script (`training/train_lora.py`) and Colab notebook (`training/train_lora_colab.ipynb`): formats examples exactly like inference, masks the prompt from the loss, samples 6,000 Critic pairs, keeps the checkpoint with the lowest validation loss. Tested end to end on a tiny random model on CPU. First Colab run (2026-11-23, T4): fixed three problems found there (Colab's old `torchao` blocking `peft`; out of GPU memory at batch size 2, now batch 1 with 16-step accumulation; bf16 wrongly enabled on the T4, now fp16). Real size: 15,286 examples, 15.5M tokens per epoch, 1,912 update steps for 2 epochs, about 17 s per step (around 9 hours)
 
 ## In progress
 
@@ -114,7 +114,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 - [ ] Confirm Qwen3-0.6B meets accuracy, CPU speed and memory requirements on representative inputs
 - [x] Fine-tune a small four-role LoRA pilot and choose the checkpoint on validation using the local GPU
-- [ ] Run the larger Colab training workflow once label quality is established and record training time, token count and best validation loss
+- [ ] Full Colab training run. The 2026-11-23 attempt (2 epochs, about 9 hours) stopped within its first hour with no checkpoint, after the embedded browser closed. Shortened since: the output layer only runs on answer tokens, 1 epoch by default, validation and checkpoints every 100 updates. Run it in a normal browser tab, then record the time and best validation loss and compare the adapter with the base model on validation
 - [ ] Decide whether the merged checkpoint improves full matching enough to justify its larger artifact
 
 ### Agent

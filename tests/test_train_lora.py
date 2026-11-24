@@ -77,3 +77,22 @@ def test_lora_training_runs_end_to_end_on_a_tiny_model(tmp_path):
     assert trainer.state.global_step == 2
     assert trainer.state.best_metric is not None
     assert (final / "adapter_config.json").exists()
+
+
+def test_answer_only_loss_matches_the_full_loss():
+    """Skipping the output layer for prompt tokens must not change the loss."""
+    torch = pytest.importorskip("torch")
+    from transformers import Qwen3Config, Qwen3ForCausalLM
+    from training.train_lora import answer_only_loss
+
+    torch.manual_seed(0)
+    model = Qwen3ForCausalLM(Qwen3Config(vocab_size=300, hidden_size=32, intermediate_size=64, num_hidden_layers=2,
+                                         num_attention_heads=4, num_key_value_heads=2, head_dim=8)).eval()
+    tokenizer = FakeTokenizer()
+    examples = [{"task": "critic", "prompt": "a long profile text here", "completion": '{"score":5}'},
+                {"task": "parser", "prompt": "short", "completion": '{"category":"HR","roles":[]}'}]
+    batch = collate(encode_all(examples, tokenizer, 200)[0], pad_id=0)
+    with torch.no_grad():
+        full = model(**batch).loss  # standard loss: logits for every position
+        ours, _ = answer_only_loss(model, batch)
+    assert ours.item() == pytest.approx(full.item(), rel=1e-5)
