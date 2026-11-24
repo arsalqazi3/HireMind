@@ -114,7 +114,10 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 - [ ] Confirm Qwen3-0.6B meets accuracy, CPU speed and memory requirements on representative inputs
 - [x] Fine-tune a small four-role LoRA pilot and choose the checkpoint on validation using the local GPU
-- [ ] Full Colab training run. The 2026-11-23 attempt (2 epochs, about 9 hours) stopped within its first hour with no checkpoint, after the embedded browser closed. Shortened since: the output layer only runs on answer tokens, 1 epoch by default, validation and checkpoints every 100 updates. Run it in a normal browser tab, then record the time and best validation loss and compare the adapter with the base model on validation
+- [x] Colab training run (2026-11-24, T4, 1 epoch of 956 updates): reached update 867 (91%) in 2h 47m before the free GPU quota ran out. Validation loss fell from 0.128 (update 100) to 0.0286 (update 800, the best). The update-800 adapter is on Drive in `models/slm/qwen3-0.6b-lora/adapter-step800`; the learning rate was already near zero, so the last 89 updates would change little
+- [x] Adapter comparison script (`evaluation/compare_adapter.py`): base and adapter answer the same held-out validation examples (excluding those used to pick the checkpoint). Three-example check on CPU: the adapter matched the rule labels on all three; the base model gave an unfinished Parser answer, a Critic score 3 points off and the wrong Searcher tool. About 6 minutes per example on Arslan's CPU, mostly the base model running to its token limit
+- [ ] Full comparison (20 Parser, 40 Critic, 40 Searcher) on Hassaan's Mac GPU; record the results in the evaluation report
+- [ ] Optional: finish the last updates with the Resume cell once the Colab GPU quota resets (about 25 minutes)
 - [ ] Decide whether the merged checkpoint improves full matching enough to justify its larger artifact
 
 ### Agent
