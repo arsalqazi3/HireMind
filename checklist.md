@@ -91,9 +91,11 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 ## Decisions for the team
 
-- [ ] Hand-check the categories of the 100 test resumes used for matching (recommended)
+- [x] Hand-checked the categories of the 100 test resumes used for matching (2026-11-24): 32 dataset categories corrected (23 to another category, 9 fit none of the 24 and are marked `NONE`). Saved to `evaluation/labels/test_categories.csv` (ids only). Plan: report A–E on the 91 in-pool resumes as the main result and the 9 as a separate group; Parser category accuracy against both dataset and checked labels, excluding `NONE`
+- [x] Writer: keep the grounded template rather than a trained model (decided 2026-11-24; explain the change from the proposal in the report)
+- [x] Training: report both Hassaan's local pilot and the Colab run (decided 2026-11-24)
 - [x] Audit missing experience levels. Only 414 of 2,684 have one clear title signal. Keep missing metadata unknown pending human validation
-- [ ] Hassaan reviews `docs/category_mapping.md` and `hiremind/skills.csv`
+- [ ] Hassaan reviews `docs/category_mapping.md` and `hiremind/skills.csv` (instructions added to `hassaan_adapter_comparison.md` on Drive, step 3)
 
 ## To do
 
