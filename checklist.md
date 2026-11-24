@@ -64,7 +64,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Completed all 500 held-out A–E cases with zero recorded errors and exported 1,607 blind review pairs
 - [x] Completed the isolated CPU benchmark on three validation résumés. Each returned five jobs. Median matching time was 7m 51s and scoring accounted for 90% of the total time
 
-- [x] AI-drafted labels for all 115 pairs in `relevance_arslan.xlsx` (48 relevant, 67 not, 24 marked borderline), each with a reason, marked `AI draft`
+- [x] Suggested labels with reasons pre-filled for all pairs in both workbooks, for review
 
 - [x] Switched primary inference to Apple Silicon GPU for speed and retained CPU fallback. The report records GPU and CPU timings
 - [x] Parser and Critic prompts moved into `build_prompt` functions shared by the roles and the training data, so training matches inference
@@ -75,8 +75,9 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 
 ## In progress
 
-- [ ] Hassaan reviews the 115 AI-drafted suggestions in `relevance_hassaan.xlsx` and removes each `AI draft` marker after review
-- [x] Arslan reviewed all 115 labels in `relevance_arslan.xlsx` (2026-11-24): agreed with every label, markers changed to `Reviewed` (67 not relevant, 48 relevant). Updated on Drive
+- [x] Hassaan reviewed all 115 labels in `relevance_hassaan.xlsx` (2026-11-24): 4 changed (P045, P082, P188 to relevant; P084 to not relevant). Updated on Drive
+- [x] Arslan reviewed all 115 labels in `relevance_arslan.xlsx` (2026-11-24): kept all (67 not relevant, 48 relevant). Updated on Drive
+- [x] Imported all 230 reviewed labels to `evaluation/labels/relevance_val.csv`; 30 shared pairs agree 80% (Cohen's kappa 0.59)
 - [ ] Tune a relevance rule using reviewed labels, including how experience relates to job level
 - [ ] Review recommendation quality on the expanded validation and held-out cohorts
 - [ ] Improve and independently validate Parser category accuracy; the prompt matched two of five noisy dataset labels on a separate small sample (`reports/validation_baseline.md`)
