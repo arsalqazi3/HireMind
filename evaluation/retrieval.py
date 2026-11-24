@@ -16,11 +16,13 @@ def read_rows(path: Path) -> list[dict]:
         return list(csv.DictReader(handle))
 
 
-def reviewed_pairs(pairs: list[dict], labels: list[dict]) -> dict[str, dict[str, bool]]:
-    """Keep pairs with all assigned reviews present and in agreement."""
+def reviewed_pairs(pairs: list[dict], labels: list[dict], allow_ai_drafts: bool = False) -> dict[str, dict[str, bool]]:
+    """Keep pairs with all assigned reviews present and in agreement.
+    Rows marked "AI draft" are skipped unless allow_ai_drafts is set."""
     reviews = defaultdict(dict)
     for row in labels:
-        if row["relevant"] in {"0", "1"} and "ai draft" not in (row.get("note") or "").casefold():
+        draft = "ai draft" in (row.get("note") or "").casefold()
+        if row["relevant"] in {"0", "1"} and (allow_ai_drafts or not draft):
             reviews[row["pair_id"]][row["labeller"]] = row["relevant"] == "1"
     result = defaultdict(dict)
     for pair in pairs:

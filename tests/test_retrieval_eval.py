@@ -27,3 +27,4 @@ def test_incomplete_drafted_or_conflicting_votes_do_not_count():
         {"pair_id": "missing", "labeller": "a", "relevant": "1"},
     ]
     assert reviewed_pairs(assignments, votes) == {"r": {"complete": True}}
+    assert reviewed_pairs(assignments, votes, allow_ai_drafts=True) == {"r": {"complete": True, "draft": True}}

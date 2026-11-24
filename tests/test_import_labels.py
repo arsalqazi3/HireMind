@@ -50,3 +50,11 @@ def test_agreement_on_shared_pairs():
     assert result["pairs"] == 3
     assert result["same_answer"] == pytest.approx(2 / 3)
     assert -1 <= result["cohen_kappa"] <= 1
+
+
+def test_ai_drafts_can_be_imported_but_stay_marked(tmp_path):
+    path = tmp_path / "a.xlsx"
+    write_sheet(path, [1, 0], ["AI draft: verify before use", "Reviewed"])
+    labels = read_labels("a", path)
+    assert problems(labels, allow_ai_drafts=True) == []
+    assert labels["source"].tolist() == ["ai_draft", "human"]

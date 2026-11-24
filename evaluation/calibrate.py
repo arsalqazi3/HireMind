@@ -79,6 +79,7 @@ def main():
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("--snapshot", type=Path, help="Optional validation ablation snapshot")
     cli.add_argument("--judgments", type=Path, help="Completed labels.csv from the matching packet")
+    cli.add_argument("--allow-ai-drafts", action="store_true", help="also use labels marked 'AI draft'")
     cli.add_argument("--output", type=Path, default=config.ROOT / "outputs/relevance_rule.json")
     args = cli.parse_args()
     validation = set((config.SPLITS_DIR / "val.txt").read_text().splitlines())
@@ -95,7 +96,8 @@ def main():
         path = directory / "relevance_val.csv"
         if not path.is_file():
             cli.error("No imported human reviews are available in evaluation/labels/relevance_val.csv")
-        labels = retrieval.reviewed_pairs(retrieval.read_rows(directory / "relevance_pairs.csv"), retrieval.read_rows(path))
+        labels = retrieval.reviewed_pairs(retrieval.read_rows(directory / "relevance_pairs.csv"), retrieval.read_rows(path),
+                                           args.allow_ai_drafts)
     reviewed = {resume_id for resume_id, rows in labels.items() if rows}
     if reviewed - validation:
         cli.error("Calibration inputs must belong to the validation split")

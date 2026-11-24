@@ -6,7 +6,12 @@ Reads data/labels/relevance_<name>.xlsx for each labeller and writes
 evaluation/labels/relevance_val.csv (pair_id, labeller, relevant, note), which
 holds no dataset text and is committed to git. Stops with a list of problems if
 any row is unlabelled or has a value other than 1 or 0.
+
+Rows whose note contains "AI draft" are rejected unless --allow-ai-drafts is
+given. With the flag they are imported with source "ai_draft" (otherwise
+"human"), so every result built on them can say the labels were AI-made.
 """
+import argparse
 from collections import Counter
 
 import pandas as pd
@@ -22,12 +27,15 @@ def read_labels(name: str, path=None) -> pd.DataFrame:
     sheet["relevant"] = sheet["relevant"].fillna("").str.strip().str.replace(r"\.0$", "", regex=True)
     sheet["note"] = sheet["note"].astype("string").fillna("")
     sheet["labeller"] = name
-    return sheet[["pair_id", "labeller", "relevant", "note"]]
+    sheet["source"] = sheet["note"].str.contains("AI draft", case=False, regex=False).map({True: "ai_draft", False: "human"})
+    return sheet[["pair_id", "labeller", "relevant", "source", "note"]]
 
 
-def problems(labels: pd.DataFrame) -> list[str]:
+def problems(labels: pd.DataFrame, allow_ai_drafts: bool = False) -> list[str]:
     bad = labels[~labels["relevant"].isin(["0", "1"])]
     issues = [f"{r.labeller} {r.pair_id}: {r.relevant or 'empty'}" for r in bad.itertuples()]
+    if allow_ai_drafts:
+        return issues
     drafts = labels[labels["note"].fillna("").astype(str).str.contains("AI draft", case=False, regex=False)]
     issues.extend(f"{r.labeller} {r.pair_id}: AI draft needs human review" for r in drafts.itertuples())
     return issues
@@ -53,13 +61,17 @@ def assignment_problems(labels: pd.DataFrame, pairs: pd.DataFrame) -> list[str]:
 
 
 def main() -> None:
+    arguments = argparse.ArgumentParser()
+    arguments.add_argument("--allow-ai-drafts", action="store_true",
+                           help="import rows marked 'AI draft' (recorded as source ai_draft)")
+    args = arguments.parse_args()
     labels = pd.concat([read_labels(name) for name in LABELLERS], ignore_index=True)
-    wrong = problems(labels) + assignment_problems(labels, pd.read_csv(KEY_FILE))
+    wrong = problems(labels, args.allow_ai_drafts) + assignment_problems(labels, pd.read_csv(KEY_FILE))
     if wrong:
         raise SystemExit("Fix these rows first:\n" + "\n".join(wrong))
     labels["relevant"] = labels["relevant"].astype(int)
     labels.to_csv(OUT_FILE, index=False)
-    print(f"saved {len(labels)} labels to {OUT_FILE}")
+    print(f"saved {len(labels)} labels to {OUT_FILE}; sources: {labels['source'].value_counts().to_dict()}")
     print("relevant share:", labels.groupby("labeller")["relevant"].mean().round(2).to_dict())
     print("agreement:", agreement(labels))
 

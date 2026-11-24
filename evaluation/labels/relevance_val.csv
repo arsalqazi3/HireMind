@@ -1,0 +1,231 @@
+pair_id,labeller,relevant,source,note
+P001,arslan,0,ai_draft,AI draft: IT infrastructure management role; resume is IT finance and budgeting
+P002,arslan,1,ai_draft,AI draft: IT budgets and financial analysis match; senior candidate for a senior analyst role
+P003,arslan,1,ai_draft,AI draft: Department budgeting forecasting process improvement and team oversight match
+P004,arslan,0,ai_draft,AI draft: Specialist state and local tax consulting; resume is FP&A not tax
+P005,arslan,0,ai_draft,AI draft: Corporate tax reporting director (ASC 740); resume lacks tax specialism
+P006,arslan,0,ai_draft,AI draft: Executive talent acquisition leadership; level and recruiting focus too far above resume
+P007,arslan,0,ai_draft,AI draft: Requires 2+ years advocacy for domestic or sexual abuse victims; resume is career counseling
+P008,arslan,0,ai_draft,AI draft: Requires social work licence; resume has none
+P009,arslan,0,ai_draft,AI draft: Staffing sales and business development; resume has no sales experience
+P010,arslan,1,ai_draft,AI draft: Nonclinical patient support and customer service fit the advocacy and client coaching experience
+P026,arslan,1,ai_draft,AI draft: Ten years of property and liability claims adjusting matches a senior claims role
+P027,arslan,0,ai_draft,AI draft: Needs 7-10 years income tax and accounting degree; resume is about 2 years as a tax clerk
+P028,arslan,0,ai_draft,AI draft: Auto body repair trade; unrelated to resume
+P029,arslan,0,ai_draft,AI draft: Car detailing; unrelated to the claims and tax experience
+P030,arslan,0,ai_draft,AI draft: Borderline: tax compliance processing is related but resume shows under 3 years and no degree for an AVP role
+P036,arslan,1,ai_draft,AI draft: Customer service and sales referral fit 7 years of retail sales and service management; entry level is a step down but credible
+P037,arslan,1,ai_draft,AI draft: Customer-facing transaction role fits retail customer service and sales experience; a step down in level but credible
+P038,arslan,1,ai_draft,AI draft: Store customer service with POS and a proven sales record matches the retail management background
+P039,arslan,1,ai_draft,AI draft: Customer inquiries and order handling fit the customer service background; SAP is desired not required
+P040,arslan,1,ai_draft,AI draft: Order research and customer service with 2 years experience required; resume exceeds this
+P046,arslan,0,ai_draft,AI draft: Borderline: IT services sales for IBM and SAP; banking business sales does not carry the technology domain
+P047,arslan,0,ai_draft,AI draft: Requires hospitality or hotel operations sales background the resume lacks
+P048,arslan,0,ai_draft,AI draft: Recruiting sales for skilled trades; resume has no recruiting or placement experience
+P049,arslan,0,ai_draft,AI draft: Borderline: outbound SaaS sales development with 3+ years; resume is banking sales program management not prospecting
+P050,arslan,0,ai_draft,AI draft: Molecular diagnostics product marketing; unrelated domain and skills
+P056,arslan,0,ai_draft,AI draft: Wireless construction field management; resume is administrative support
+P057,arslan,0,ai_draft,AI draft: Construction cost estimating; resume lacks estimating skills
+P058,arslan,1,ai_draft,AI draft: Entry-level administrative support with scheduling data entry and documents matches the executive assistant background
+P059,arslan,0,ai_draft,AI draft: Construction software sales development; resume has no sales experience
+P060,arslan,1,ai_draft,AI draft: Administrative support for recruiting onboarding and professional development matches office management event planning and training experience
+P061,arslan,0,ai_draft,AI draft: Borderline: needs an agency full-desk recruiting record; recruiting is only a side part of the healthcare consulting business
+P062,arslan,1,ai_draft,AI draft: Healthcare provider strategy consulting matches ASC administration practice management and budgeting experience
+P063,arslan,0,ai_draft,AI draft: Maintenance management software implementation in industrial sectors; unrelated to healthcare operations
+P064,arslan,0,ai_draft,AI draft: Requires nuclear industry advisory experience
+P065,arslan,0,ai_draft,AI draft: Data engineering with SQL and Spark; resume has no such skills
+P076,arslan,0,ai_draft,AI draft: Heavy civil construction project engineering; resume is mechanical product design in plastics
+P077,arslan,1,ai_draft,AI draft: Aircraft manufacturing engineering with tooling and molding fits 8 years of mechanical design and process qualification
+P078,arslan,0,ai_draft,AI draft: Borderline: hydro power plant systems engineering; turbines and generators differ from plastic seal design
+P079,arslan,1,ai_draft,AI draft: Tooling design with rubber injection and plastic molding is a close match to the plastics manufacturing background
+P080,arslan,1,ai_draft,AI draft: Plastics process engineering with injection molding matches PEEK and PTFE molding process qualification experience
+P086,arslan,0,ai_draft,AI draft: Requires an exercise science degree and group exercise teaching; resume has a psychology degree and running coaching
+P087,arslan,0,ai_draft,AI draft: Borderline: coaching private fitness sessions on equipment; resume shows running group coaching but no personal training
+P088,arslan,0,ai_draft,AI draft: Requires an accredited trainer certification or exercise degree; resume has neither
+P089,arslan,0,ai_draft,AI draft: Borderline: requires management experience; resume shows event coordination and volunteer leadership only
+P090,arslan,0,ai_draft,AI draft: Aquatics coaching programme management; resume has no aquatics experience
+P091,arslan,0,ai_draft,AI draft: Physician role; resume has no medical degree
+P092,arslan,0,ai_draft,AI draft: Borderline: requires a California medical assistant course; resume has EMT training and administrative referral work
+P093,arslan,0,ai_draft,AI draft: Borderline: director of clinical services needs clinical leadership credentials; resume is administrative and seeks a supervisor role
+P094,arslan,0,ai_draft,AI draft: Requires an RN licence
+P095,arslan,0,ai_draft,AI draft: Borderline: certified medical assistant role; referral and records work fits but no medical assistant certification shown
+P096,arslan,0,ai_draft,AI draft: VP of HR is an executive role well above a 10-year HR manager
+P097,arslan,0,ai_draft,AI draft: Needs healthcare staffing and recruiting experience; resume is talent management and HR programmes
+P098,arslan,1,ai_draft,AI draft: Regional HR director leading HRBPs on talent and leadership development; a step up from global HR manager but credible
+P099,arslan,1,ai_draft,AI draft: Senior HRBP for manufacturing with organisational and leadership development closely matches the resume
+P100,arslan,0,ai_draft,AI draft: Full-cycle operations recruiting; resume is HR programmes not recruiting
+P101,arslan,1,ai_draft,AI draft: Security engineering with firewalls IDS/IPS and SIEM matches 16 years of intrusion analysis and network security
+P102,arslan,1,ai_draft,AI draft: Senior SOC analyst handling incidents matches the intrusion detection and security monitoring background
+P103,arslan,0,ai_draft,AI draft: Web and mobile software engineering; resume is network security not software development
+P104,arslan,1,ai_draft,AI draft: Security monitoring incident response and IDS tools match; entry level is below the resume but credible
+P105,arslan,0,ai_draft,AI draft: Sports data science with machine learning; resume has no data science skills
+P111,arslan,1,ai_draft,AI draft: Retail clothing sales associate role matches the clothing and accessories sales experience
+P112,arslan,0,ai_draft,AI draft: B2B software account executive needing warehousing industry experience and a business degree
+P113,arslan,1,ai_draft,AI draft: Retail clothing sales associate role matches the clothing and accessories sales experience
+P114,arslan,0,ai_draft,AI draft: Borderline: B2B fiber network sales with cold calling and territory building; resume is retail floor sales only
+P115,arslan,1,ai_draft,AI draft: Retail clothing sales associate role matches the clothing and accessories sales experience
+P121,arslan,1,ai_draft,AI draft: Store customer service with order entry payments and issue handling matches retail sales associate experience
+P122,arslan,0,ai_draft,AI draft: Borderline: management trainee programme expects a completed degree; resume shows none
+P123,arslan,1,ai_draft,AI draft: Store customer service with sales goals stocking and loading fits retail and warehouse experience
+P124,arslan,1,ai_draft,AI draft: Store customer service with sales goals stocking and loading fits retail and warehouse experience
+P125,arslan,0,ai_draft,AI draft: Borderline: virtual medical device sales to physicians; resume has retail sales only
+P126,arslan,1,ai_draft,AI draft: Accounting manager role with month-end close reporting and internal controls matches 8 years of accounting and controllership
+P127,arslan,0,ai_draft,AI draft: Full-stack software engineering; resume is accounting and finance
+P128,arslan,1,ai_draft,AI draft: FP&A financial analyst role matches budgeting forecasting and reporting experience
+P129,arslan,1,ai_draft,AI draft: Financial analysis role fits; 0-3 years asked is below the resume's 8 years but credible
+P130,arslan,1,ai_draft,AI draft: Accounting and operations management with statements payroll and audit support matches the resume
+P131,arslan,0,ai_draft,AI draft: UI and UX design for software; resume is mechanical CAD design
+P132,arslan,0,ai_draft,AI draft: Requires a mechanical engineering degree and management experience; resume has an associate degree and no management
+P133,arslan,1,ai_draft,AI draft: Product design with 3D CAD and prototyping; accepts equivalent practical experience and resume has 5+ years of CAD design
+P134,arslan,0,ai_draft,AI draft: Borderline: requires a bachelor's in engineering and 5-7 years engineering; resume has an associate degree in drafting
+P135,arslan,0,ai_draft,AI draft: Senior interior design; unrelated to mechanical design
+P136,arslan,1,ai_draft,AI draft: Certified Texas teacher with mathematics experience; elementary grade is lower than past teaching but credible
+P137,arslan,0,ai_draft,AI draft: Borderline: fellowship for career changers exploring teaching; resume is already a veteran certified teacher
+P138,arslan,0,ai_draft,AI draft: Requires visual impairment teaching skills such as braille; resume lacks them
+P139,arslan,1,ai_draft,AI draft: Certified Texas science teacher fits an elementary science teaching role
+P140,arslan,0,ai_draft,AI draft: Social studies subject; resume teaches chemistry physics and mathematics
+P146,arslan,1,ai_draft,AI draft: Lead cook directing cooks fits assistant chef experience preparing meals and supervising kitchen staff
+P147,arslan,0,ai_draft,AI draft: Borderline: chef instructor needs culinary depth and teaching; resume has 3 years as assistant chef and has moved toward finance
+P148,arslan,0,ai_draft,AI draft: Requires 3+ years as executive sous chef or sous chef; resume shows assistant chef only
+P149,arslan,1,ai_draft,AI draft: Borderline: private chef cooking and errands fit assistant chef experience; a portfolio is required
+P150,arslan,0,ai_draft,AI draft: Pastry specialist instructor; resume has no pastry experience
+P156,arslan,1,ai_draft,AI draft: Agency recruiter role needs no prior recruiting; resume has sourcing screening and interview coordination
+P157,arslan,1,ai_draft,AI draft: High-volume screening for an associate recruiter matches sourcing and preliminary screening experience
+P158,arslan,0,ai_draft,AI draft: Borderline: experienced HR manager role; resume is about 3.5 years as an HR assistant
+P159,arslan,1,ai_draft,AI draft: HR generalist covering performance management analytics and audits matches PMS HRIS and HR audit experience
+P160,arslan,1,ai_draft,AI draft: HR assistant with 3+ years of HR asked; resume matches recruitment onboarding records and training support
+P161,arslan,0,ai_draft,AI draft: Part-time entry-level hospital cook is far below an executive chef with 12 years running large operations
+P162,arslan,0,ai_draft,AI draft: Entry-level line cook is far below an executive chef with 12 years running large operations
+P163,arslan,1,ai_draft,AI draft: Restaurant executive chef leading the kitchen and training sous chefs matches the resume
+P164,arslan,1,ai_draft,AI draft: Executive chef for food service with menu and financial performance matches the resume
+P165,arslan,1,ai_draft,AI draft: Stadium executive chef needing multi-unit and large catering experience matches multi-outlet banquet and cater-out operations
+P166,arslan,0,ai_draft,AI draft: Requires cleanroom construction expertise the resume lacks
+P167,arslan,0,ai_draft,AI draft: Borderline: needs 10+ years of construction management leading PMs and superintendents; resume shows about 4 years as construction manager
+P168,arslan,0,ai_draft,AI draft: Borderline: heavy civil labour foreman leading crews; resume is telecom construction management
+P169,arslan,1,ai_draft,AI draft: Telecom construction manager for civil works on sites closely matches the tower construction management experience
+P170,arslan,1,ai_draft,AI draft: Borderline: telecom outside plant construction manager; resume is telecom tower construction management with budgets and subcontractors
+P171,arslan,1,ai_draft,AI draft: Borderline: entry-level community health outreach; resume manages public health programmes with community partners
+P172,arslan,0,ai_draft,AI draft: Requires a behavioural health clinician licence
+P173,arslan,0,ai_draft,AI draft: Temporary entry-level children's camp counselor is far below a program manager
+P174,arslan,0,ai_draft,AI draft: Borderline: regional director for behavioural health referral partnerships; resume is programme and account management without referral sales
+P175,arslan,1,ai_draft,AI draft: Borderline: wellness coach with case management; resume has one-on-one health coaching in a mental health centre and coach training
+P196,arslan,0,ai_draft,AI draft: Volunteer TikTok content creation; unrelated to a technology executive
+P197,arslan,0,ai_draft,AI draft: Hourly finance specialist; unrelated to systems architecture and business development
+P198,arslan,1,ai_draft,AI draft: Senior tech business development with executive relationships and large IT deals matches 25 years of systems and business development leadership
+P199,arslan,0,ai_draft,AI draft: Entry-level marketing automation analyst; unrelated skills and level
+P200,arslan,1,ai_draft,AI draft: Product engineering services sales needing 10+ years and CxO relationships matches the engineering manufacturing and business development background
+P011,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P012,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P013,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P014,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P015,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P016,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P017,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P018,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P019,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P020,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P021,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P022,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P023,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P024,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P025,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P031,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P032,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P033,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P034,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P035,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P036,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P037,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P038,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P039,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P040,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P041,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P042,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P043,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P044,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P045,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P051,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P052,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P053,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P054,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P055,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P066,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P067,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P068,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P069,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P070,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P071,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P072,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P073,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P074,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P075,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P081,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P082,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P083,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P084,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P085,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P106,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P107,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P108,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P109,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P110,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P116,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P117,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P118,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P119,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P120,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P121,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P122,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P123,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P124,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P125,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P131,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P132,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P133,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P134,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P135,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P136,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P137,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P138,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P139,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P140,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P141,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P142,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P143,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P144,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P145,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P151,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P152,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P153,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P154,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P155,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P156,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P157,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P158,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P159,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P160,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P171,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P172,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P173,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P174,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P175,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P176,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P177,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P178,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P179,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P180,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P181,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P182,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P183,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P184,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P185,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P186,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P187,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P188,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P189,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P190,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P191,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P192,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P193,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P194,hassaan,0,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.
+P195,hassaan,1,ai_draft,AI draft: preliminary review of excerpts; human review required before evaluation.

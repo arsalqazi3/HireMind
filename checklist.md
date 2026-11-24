@@ -76,7 +76,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 ## In progress
 
 - [ ] Hassaan reviews the 115 AI-drafted suggestions in `relevance_hassaan.xlsx` and removes each `AI draft` marker after review
-- [ ] Arslan reviews the 115 AI-drafted labels in `relevance_arslan.xlsx` and removes each `AI draft` marker after review
+- [x] Arslan reviewed all 115 labels in `relevance_arslan.xlsx` (2026-11-24): agreed with every label, markers changed to `Reviewed` (67 not relevant, 48 relevant). Updated on Drive
 - [ ] Tune a relevance rule using reviewed labels, including how experience relates to job level
 - [ ] Review recommendation quality on the expanded validation and held-out cohorts
 - [ ] Improve and independently validate Parser category accuracy; the prompt matched two of five noisy dataset labels on a separate small sample (`reports/validation_baseline.md`)
