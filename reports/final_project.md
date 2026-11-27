@@ -32,6 +32,8 @@ The separate step-800 study compared the base and Colab checkpoints on shared co
 
 We generated relevance judgments with local Qwen3-8B and checked eight pairs against the source texts. After those checks, 336 of 370 pairs had determinate judgments. On the 15 résumés with complete pooled judgments, step 800 changed precision@5 by −0.067, with a paired 95% interval of −0.213 to +0.093. Step 800 improved agreement with the component rules and missed the five-result coverage criterion. The base model remains the demo default. The [evaluation report](evaluation_2026-11-18.md) records the full methods, ablations, latency and failure cases.
 
+The held-out A–E study reviewed all 1,607 pooled pairs with local Qwen3-8B and direct assistant review. It recorded 1,389 determinate and 218 uncertain judgments. In the 91-résumé in-catalogue cohort, precision@5 bounds were 0.631–0.741 for FAISS and 0.560–0.699 for the full base agent. Seven résumés supported a paired comparison. The full base agent's change against FAISS was +0.029, with a 95% interval of −0.199 to +0.229. The sample leaves the ranking benefit uncertain.
+
 ## Deliverables
 
 The repository contains the Streamlit app, data preparation and index scripts, LoRA training code, tests, and evaluation scripts. Model weights, the index, and example datasets are local inputs. The [demo runbook](../docs/demo.md) describes the presentation flow and backup recording. [Repository setup](../README.md)

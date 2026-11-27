@@ -86,8 +86,8 @@ with zero recorded case errors. These figures include empty slots in each
 
 D returned five more same-category jobs than A on the shared 100 résumés.
 C and E retried on 53 résumés each. The final packet contains 1,607 blind
-review pairs. As of November 21, no human judgments were present. Precision
-at five, reciprocal rank and pooled NDCG remain pending.
+review pairs. The completed assisted relevance results appear in the
+[held-out catalogue coverage section](#held-out-catalogue-coverage).
 
 ## Lexical and hybrid retrieval experiment
 
@@ -355,6 +355,32 @@ The source is `outputs/evaluation_2026-11-24/ai_review/test_starter_review.csv`.
 No résumé has every pooled posting judged, so a paired precision estimate and
 bootstrap interval are unavailable. These assistant judgments are exploratory;
 independent human review remains pending.
+
+The completed held-out review covered all 1,607 pairs across 100 résumés.
+The final labels contain 902 credible matches, 487 unsuitable matches and
+218 uncertain pairs. Qwen3-8B supplied 1,393 of the recorded judgments.
+Direct assistant review supplied the remaining 214, including the starter
+batch, an 11-posting design case and five checks involving licensing or
+training requirements. The five checks replaced positive grades with two
+unsuitable and three uncertain verdicts. This targeted audit leaves overall
+reviewer accuracy unknown.
+
+| Variant | In-pool precision@5 bounds (91) | Out-of-pool precision@5 bounds (9) | In-pool precision@5 (7) | In-pool MRR@5 (7) | In-pool pooled NDCG@5 (7) |
+|---|---:|---:|---:|---:|---:|
+| A | 0.631–0.741 | 0.711–0.800 | 0.657 | 0.738 | 0.642 |
+| B | 0.521–0.664 | 0.467–0.644 | 0.657 | 0.762 | 0.650 |
+| C | 0.400–0.499 | 0.422–0.467 | 0.600 | 0.929 | 0.663 |
+| D | 0.560–0.699 | 0.711–0.800 | 0.686 | 0.833 | 0.682 |
+| E | 0.437–0.543 | 0.444–0.489 | 0.657 | 0.929 | 0.706 |
+
+The bounds use all résumés in each group. Empty slots count as misses and
+each uncertain returned posting contributes to the upper bound. The point
+estimates use the seven in-pool résumés with determinate judgments for every
+pooled posting. D's paired precision change against A was +0.029, with a 95%
+résumé-bootstrap interval from −0.199 to +0.229. All four in-pool intervals
+included zero. Only two out-of-pool résumés had complete determinate grades.
+The paired estimates do not establish a ranking winner. The local scored
+summary and labels are under `outputs/evaluation_2026-11-24/ai_review/historical/`.
 
 The base Parser returned a profile for all 91 in-pool test résumés,
 including five with an unknown category. It agreed with the original
