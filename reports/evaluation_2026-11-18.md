@@ -451,6 +451,16 @@ These are AI judgments, so they do not satisfy the independent human review
 gate. The judgments and calculations are under
 `outputs/evaluation_2026-11-24/ai_review/validation/`.
 
+A direct assistant spot-check of all eight postings for one validation résumé
+changed six verdicts. The local reviewer sometimes inferred Spanish fluency
+and overlooked explicit teaching certification requirements. After applying
+these eight checks to a copy of the validation labels, 336 pairs had a
+determinate judgment. Precision@5 bounds were 0.530–0.615 for base and
+0.420–0.510 for step 800. The paired change on the 15 fully judged résumés
+was −0.067, with a 95% interval of −0.213 to +0.093. This spot-check covered a
+single résumé. It illustrates specific reviewer errors and leaves overall
+reviewer accuracy unknown.
+
 ### Reproduction
 
 The run's local inputs, logs, snapshots and reviewer workbooks are under
