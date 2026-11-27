@@ -78,6 +78,71 @@ def test_agent_without_critic(monkeypatch):
     assert result.retries == 0
 
 
+def test_last_round_uses_literal_role_after_empty_searches(monkeypatch):
+    from hiremind import tools
+
+    monkeypatch.setattr(parser, "parse", lambda _: Profile("FITNESS", roles=["Basketball Coach"]))
+    monkeypatch.setattr(searcher, "search", lambda _: [])
+    monkeypatch.setattr(tools, "shortlist_jobs", lambda *args: [])
+    job = Job("coach", "Basketball Coach", "", "FITNESS")
+    calls = []
+
+    def rescue(query, profile, exclude):
+        calls.append(query)
+        return [job]
+
+    monkeypatch.setattr(tools, "role_shortlist", rescue)
+    monkeypatch.setattr(critic, "judge", lambda p, jobs: [Judgement(job.job_id, 8, "role match")])
+    result = agent.run("resume")
+    assert calls == ["Basketball Coach"]
+    assert result.retries == 2
+    assert [item.job_id for item in result.top_jobs] == ["coach"]
+
+
+def test_literal_sports_coaching_headline_corrects_unrelated_category(monkeypatch):
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"category":"BANKING","roles":[]}')
+    profile = parser.parse("ASSISTANT BASKETBALL COACH Summary Coached players and organized team practices.")
+    assert profile.category == "FITNESS"
+    assert profile.roles == ["ASSISTANT BASKETBALL COACH"]
+
+
+def test_missing_engineering_role_recovers_the_literal_headline(monkeypatch):
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"category":"ENGINEERING","roles":[]}')
+    profile = parser.parse("MINERALOGY ENGINEERING INTERN Summary Worked on lab and pilot plant flotation.")
+    assert profile.category == "ENGINEERING"
+    assert profile.roles == ["MINERALOGY ENGINEERING INTERN"]
+
+
+def test_ranking_prefers_documented_leadership_and_varies_postings(monkeypatch):
+    from hiremind import tools
+    from hiremind.schemas import Preferences
+
+    description = (
+        "Lead the retail team and manage store operations throughout the sales week. "
+        "Coach associates on customer service and maintain the staffing schedule for each shift. "
+        "Oversee payroll, approve store expenses, plan for seasonal demand and report inventory "
+        "changes, sales results and customer feedback to regional leadership."
+    )
+    jobs = [
+        Job("service", "Customer Service Representative", "", "APPAREL"),
+        Job("first", "Store Manager", description, "APPAREL", location="Aurora, IL"),
+        Job("duplicate", "Store Manager", description + "\n", "APPAREL", location="Aurora, IL"),
+        Job("other-site", "Store Manager", description + " Apply now.", "APPAREL", location="St Peters, MO"),
+        Job("different", "Store Manager", "Oversee a separate wholesale operation.", "APPAREL", location="Aurora, IL"),
+    ]
+    monkeypatch.setattr(parser, "parse", lambda _: Profile("APPAREL", roles=["Franchise Owner"]))
+    monkeypatch.setattr(searcher, "search", lambda _: jobs)
+    monkeypatch.setattr(tools, "shortlist_jobs", lambda *args: [])
+    monkeypatch.setattr(tools, "role_shortlist", lambda *args: [])
+    monkeypatch.setattr(critic, "judge", lambda _, items: [Judgement(items[0].job_id, 7, "match")])
+
+    result = agent.run("resume")
+    assert [j.job_id for j in result.top_jobs] == ["first", "different", "service", "other-site"]
+
+    with_location = agent.run("resume", preferences=Preferences(location="St Peters"))
+    assert [j.job_id for j in with_location.top_jobs] == ["other-site", "service", "first", "different"]
+
+
 def test_parser_recovers_literal_sections_when_model_returns_placeholders(monkeypatch):
     monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: '{"category":"ENGINEERING","roles":["null"],"education":["null"],"projects":["null"]}')
     text = "PROFILE\nSoftware engineer with 4 years of experience.\nEXPERIENCE\nSoftware Engineer, Example Inc | 2022–2026\n- Built software, with Python.\nEDUCATION\nComputer Science Degree, Example University\nPROJECTS\nBuilt a Python tool."

@@ -78,13 +78,15 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Hassaan reviewed all 115 labels in `relevance_hassaan.xlsx` (2026-11-24): 4 changed (P045, P082, P188 to relevant; P084 to not relevant). Updated on Drive
 - [x] Arslan reviewed all 115 labels in `relevance_arslan.xlsx` (2026-11-24): kept all (67 not relevant, 48 relevant). Updated on Drive
 - [x] Imported all 230 reviewed labels to `evaluation/labels/relevance_val.csv`; 30 shared pairs agree 80% (Cohen's kappa 0.59)
-- [ ] Tune a relevance rule using reviewed labels, including how experience relates to job level
+- [x] Fit a relevance rule on 194 resolved validation pairs. Five résumé-grouped folds gave 60.8% balanced accuracy, with a selected threshold of 0.45.
+- [x] Repeat calibration with step 800 enabled for the Parser. On the same pairs and folds, balanced accuracy was 67.7% and the selected threshold was 0.55. The result is in the shared Drive as `relevance_rule_step800.json`.
 - [ ] Review recommendation quality on the expanded validation and held-out cohorts
 - [ ] Improve and independently validate Parser category accuracy; the prompt matched two of five noisy dataset labels on a separate small sample (`reports/validation_baseline.md`)
 - [ ] Improve Searcher stop/retry behavior; the base model repeated a query in the real-index smoke test
 - [ ] Reduce CPU scoring latency and repeat the isolated benchmark to measure the change
 - [ ] Evaluate the Critic's reasons and the Writer's structured, profile-grounded drafts with human reviewers
 - [ ] Calibrate the revised weighted scores and in-depth review against human-reviewed matches; the earlier fictional-resume runs predate these changes
+- [x] Run an exploratory 100-résumé standard-versus-in-depth study with saved AI assessments, and a targeted ten-résumé retrieval follow-up. Results and judgment limits are in the evaluation report; independent human validation remains open.
 - [ ] Review pooled results from both retrieval strategies to measure precision at five with adequate judgment coverage
 - [ ] Prepare stronger labels for full profiles and validate any new adapter on a broader set before making it the default
 - [ ] Measure the Searcher adapter's effect on judged final rankings as well as tool-action validity
@@ -95,13 +97,12 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Writer: keep the grounded template rather than a trained model (decided 2026-11-24; explain the change from the proposal in the report)
 - [x] Training: report both Hassaan's local pilot and the Colab run (decided 2026-11-24)
 - [x] Audit missing experience levels. Only 414 of 2,684 have one clear title signal. Keep missing metadata unknown pending human validation
-- [ ] Hassaan reviews `docs/category_mapping.md` and `hiremind/skills.csv` (instructions added to `hassaan_adapter_comparison.md` on Drive, step 3)
+- [x] Audited the category rules, a six-title sample per category and skill aliases. Recorded examples and proposed fixes in `hassaan_adapter_comparison.md` on the shared Drive.
 
 ## To do
 
 ### Matching evaluation setup
 
-- [ ] Fit and review the relevance rule on human judgments once both classes are available
 - [ ] Score ablation A (FAISS only) on the test set
 
 ### Training data (rule-based labels)
@@ -119,7 +120,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Fine-tune a small four-role LoRA pilot and choose the checkpoint on validation using the local GPU
 - [x] Colab training run (2026-11-24, T4, 1 epoch of 956 updates; written up in `reports/training_colab_2026-11-24.md`): reached update 867 (91%) in 2h 47m before the free GPU quota ran out. Validation loss fell from 0.128 (update 100) to 0.0286 (update 800, the best). The update-800 adapter is on Drive in `models/slm/qwen3-0.6b-lora/adapter-step800`; the learning rate was already near zero, so the last 89 updates would change little
 - [x] Adapter comparison script (`evaluation/compare_adapter.py`): base and adapter answer the same held-out validation examples (excluding those used to pick the checkpoint). Three-example check on CPU: the adapter matched the rule labels on all three; the base model gave an unfinished Parser answer, a Critic score 3 points off and the wrong Searcher tool. About 6 minutes per example on Arslan's CPU, mostly the base model running to its token limit
-- [ ] Full comparison (20 Parser, 40 Critic, 40 Searcher) on Hassaan's Mac GPU; record the results in the evaluation report
+- [x] Full step-800 comparison on Hassaan's Mac GPU (20 Parser, 40 Critic, 40 Searcher). Recorded the results and representative failure cases in the evaluation report.
 - [ ] Optional: finish the last updates with the Resume cell once the Colab GPU quota resets (about 25 minutes)
 - [ ] Decide whether the merged checkpoint improves full matching enough to justify its larger artifact
 
@@ -139,7 +140,12 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 ### Evaluation and report
 
 - [ ] Broaden the held-out component check with verified full-profile and Critic reference labels
+- [x] Scored historical result coverage for the 91 in-pool and nine out-of-pool résumés. Prepared two blank independent reviewer workbooks with the first 12 résumés at the top.
+- [x] Evaluated the base Parser on the 91 in-pool test résumés against both category references. It matched 60 originals and 60 checked categories, with eight matches unique to each reference.
+- [x] Completed the paired 40-résumé validation ranking run. Base returned five jobs for 40 résumés versus 33 for step 800, so base remains the demo checkpoint.
+- [ ] Obtain and reconcile independent relevance judgments for the 370 validation ranking pairs.
 - [ ] Obtain independent human judgments for the held-out A–E results. The exported packet has 1,607 pairs and no completed judgments
+- [x] Score the exploratory assistant review of the first 12 held-out résumés. It judged 145 of 198 pooled pairs, left 53 uncertain, and yielded precision@5 bounds for A–E in the evaluation report. No résumé is fully judged, so paired estimates remain pending.
 - [x] Recorded CPU time, memory, model size, retries and cover-letter regression checks in the evaluation report
 - [x] Drafted the [evaluation report](reports/evaluation_2026-11-18.md) with completed run results
 - [ ] Complete the final report with reviewed ranking metrics

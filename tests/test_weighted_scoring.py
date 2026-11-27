@@ -1,7 +1,14 @@
 import pytest
-from hiremind import agent, matching
+from hiremind import agent, matching, tools
 from hiremind.roles import critic, parser, searcher
 from hiremind.schemas import Job, Preferences, Profile, Judgement
+
+
+@pytest.fixture(autouse=True)
+def no_catalogue_fallback(monkeypatch):
+    # These tests supply their own Searcher results.
+    monkeypatch.setattr(tools, "shortlist_jobs", lambda *args: [])
+    monkeypatch.setattr(tools, "role_shortlist", lambda *args: [])
 
 
 def test_weights_and_partial_information():
@@ -208,6 +215,52 @@ def test_general_javascript_does_not_satisfy_an_ext_js_or_salesforce_title():
     profile = Profile("IT", skills=["JavaScript"])
     assert matching.missing_core_tools(profile, Job("1", "EXT JS Developer", "", "IT")) == ["Ext JS"]
     assert matching.missing_core_tools(profile, Job("2", "Salesforce Developer", "", "IT")) == ["Salesforce"]
+
+
+def test_platform_gate_uses_specific_resume_evidence_and_respects_alternatives():
+    profile = Profile("CONSULTANT", skills=["JavaScript", "SAP"],
+                      experience_evidence=["Configured PeopleSoft inventory workflows."])
+    jobs = [
+        Job("1", "WalkMe Consultant", "", "CONSULTANT", ["JavaScript"]),
+        Job("2", "SAP PP Functional Consultant", "", "CONSULTANT"),
+        Job("3", "PeopleSoft Consultant", "", "CONSULTANT"),
+        Job("4", "HRIS Analyst", "Proven experience with Workday or PeopleSoft is required.", "CONSULTANT"),
+    ]
+    assert matching.score_weighted(profile, jobs[0], 10).breakdown.requirements < 6
+    assert matching.missing_core_tools(profile, jobs[1]) == ["SAP PP"]
+    assert not matching.missing_core_tools(profile, jobs[2])
+    assert not matching.missing_core_tools(profile, jobs[3])
+
+
+def test_explicit_license_and_enrollment_requirements_can_block_a_high_score():
+    profile = Profile("ACCOUNTANT", education=["Bachelor of Arts in Marketing"])
+    audit = Job("1", "Audit Supervisor", "Requirements:Team playerCPA LicenseGood communication skills", "ACCOUNTANT")
+    internship = Job("2", "Marketing Intern", "Requirements\n· Currently pursuing a B.A. in Marketing", "ACCOUNTANT")
+    assert matching.score_weighted(profile, audit, 10).breakdown.requirements < 6
+    assert matching.score_weighted(profile, internship, 10).breakdown.requirements < 6
+    profile.education.append("Currently pursuing a B.A. in Marketing")
+    assert not matching.missing_required_credentials(profile, internship)
+    audit.description = "Requirements: CPA license preferred."
+    assert not matching.missing_required_credentials(profile, audit)
+
+
+def test_advertising_cpa_metric_is_not_an_accounting_credential():
+    profile = Profile("DIGITAL-MEDIA", skills=["CPA"], roles=["Media Analyst"],
+                      experience_evidence=["Optimized CPA and ROI for digital campaigns."])
+    audit = Job("1", "Audit Supervisor", "Requirements:Team playerCPA LicenseGood communication skills", "ACCOUNTANT")
+    assert matching.missing_required_credentials(profile, audit) == ["CPA"]
+    profile.education.append("Certified Public Accountant")
+    assert not matching.missing_required_credentials(profile, audit)
+
+
+def test_high_score_limited_when_no_detected_required_skills_have_evidence():
+    job = Job("1", "Reporting Analyst", "What You Need To Succeed:\nTableau and SQL.", "IT")
+    profile = Profile("IT", skills=["Word"])
+    item = matching.score_weighted(profile, job, 10)
+    assert item.breakdown.requirements == 7.9
+    assert "none of the detected required skills" in item.reason
+    profile.projects.append("Used Tableau and SQL for a sales dashboard.")
+    assert matching.score_weighted(profile, job, 10).breakdown.requirements == 10
 
 
 def test_total_experience_does_not_establish_pediatric_experience():

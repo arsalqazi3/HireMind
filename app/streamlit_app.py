@@ -207,9 +207,9 @@ def main() -> None:
                             attempt, total, phase = event["attempt"], event["total"], event["phase"]
                             if phase == "drafting":
                                 letter_bar.progress((attempt - 1) / total, text="Drafting cover letter")
-                                letter_status.info("Connecting résumé examples to duties in the selected posting.")
+                                letter_status.info("Writing a draft around your experience and the selected posting.")
                             elif phase == "checking":
-                                letter_status.info("Checking that the selected examples and duties exist in the source text.")
+                                letter_status.info("Checking the draft’s claims against the résumé and posting.")
                             else:
                                 letter_bar.progress(1.0, text="Cover letter ready")
                                 letter_status.empty()

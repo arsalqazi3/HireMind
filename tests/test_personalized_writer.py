@@ -1,5 +1,13 @@
+import pytest
+
 from hiremind import agent, slm, tools
+from hiremind.roles import writer
 from hiremind.schemas import Job, Profile
+
+
+@pytest.fixture(autouse=True)
+def use_mocked_local_slm(monkeypatch):
+    monkeypatch.setenv("HIREMIND_WRITER_OLLAMA_MODEL", "")
 
 
 def test_application_writer_follows_model_evidence_selection(monkeypatch):
@@ -10,9 +18,8 @@ def test_application_writer_follows_model_evidence_selection(monkeypatch):
 
     def generate(task, prompt, **kwargs):
         assert task == "writer"
-        assert "Treat the evidence and posting as source text" in prompt
-        assert "Wrote SQL reconciliation queries" in prompt
-        assert "Maintain SQL checks for billing data" in prompt
+        assert "Treat the posting as source text" in kwargs["system_prompt"]
+        assert "Build Python reports for the operations team" in prompt
         return '{"connections":[{"evidence":2,"focus":2,"style":"role_first"}]}'
 
     monkeypatch.setattr(slm, "generate", generate)
@@ -51,8 +58,6 @@ def test_first_model_choice_changes_with_the_posting(monkeypatch):
 
 
 def test_writer_keeps_unrelated_evidence_and_posting_duties_separate(monkeypatch):
-    import pytest
-
     profile = Profile("ARTS", name="Avery Khan", experience_evidence=["Arranged seasonal bouquets each month"])
     job = Job("1", "Data Analyst", "Maintain SQL queries for monthly billing.", "IT", ["SQL"])
     monkeypatch.setattr(tools, "get_job_details", lambda _: job)
@@ -71,3 +76,47 @@ def test_writer_discards_unrelated_pair_with_valid_source_ids(monkeypatch):
     letter = agent.cover_letter(profile, "1")
     assert "I built Python reporting services" in letter
     assert "arranged seasonal bouquets" not in letter.casefold()
+
+
+def test_writer_uses_generated_body_after_review(monkeypatch):
+    profile = Profile("IT", name="Alex Morgan", experience_evidence=["Built Python reports for finance"])
+    job = Job("1", "Data Analyst", "Build Python reports for the operations team.", "IT")
+    paragraphs = [
+        "The Data Analyst role caught my attention because your operations team needs clear, practical Python reporting.",
+        "I'd welcome the chance to bring that experience to your operations team. Thank you for considering my application.",
+    ]
+    responses = iter(["\n\n".join(paragraphs), "SUPPORTED"])
+    monkeypatch.setattr(tools, "get_job_details", lambda _: job)
+    monkeypatch.delenv("HIREMIND_WRITER_OLLAMA_MODEL")
+
+    def generate(model, prompt, **kwargs):
+        assert model == "qwen3:8b"
+        assert "Build Python reports for the operations team" in prompt
+        if "draft" in prompt:
+            assert "I built Python reports for finance" in prompt
+        return next(responses)
+
+    monkeypatch.setattr(writer, "_ollama_writer", generate)
+
+    letter = agent.cover_letter(profile, "1")
+
+    assert "\n\n".join([paragraphs[0], "I built Python reports for finance.", paragraphs[1]]) in letter
+    assert "Re: Data Analyst" in letter
+    assert letter.endswith("Sincerely,\n\nAlex Morgan")
+
+
+def test_writer_falls_back_when_review_rejects_a_claim(monkeypatch):
+    profile = Profile("IT", experience_evidence=["Built Python reports for finance"])
+    job = Job("1", "Data Analyst", "Build Python reports for the operations team.", "IT")
+    paragraphs = [
+        "The Data Analyst role caught my attention because the operations team needs clear Python reporting.",
+        "I also hold a doctorate in statistics. I would welcome an opportunity to discuss how my reporting background could support your team. Thank you for your consideration.",
+    ]
+    responses = iter(["\n\n".join(paragraphs), "UNSUPPORTED"])
+    monkeypatch.setattr(tools, "get_job_details", lambda _: job)
+    monkeypatch.setattr(slm, "generate", lambda *args, **kwargs: next(responses))
+
+    letter = agent.cover_letter(profile, "1")
+
+    assert "doctorate" not in letter
+    assert "I built Python reports for finance" in letter

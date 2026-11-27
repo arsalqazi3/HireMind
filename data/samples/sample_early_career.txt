@@ -1,0 +1,20 @@
+TEST RESUME — FICTIONAL
+Taylor Ahmed
+Junior Web Developer
+
+PROFILE
+Recent computer science graduate seeking a junior web developer role.
+
+SKILLS
+HTML, CSS, JavaScript, Python, Git
+
+EXPERIENCE
+Software Development Intern, Example Studio | Summer 2025
+- Updated website pages using HTML, CSS, and JavaScript.
+- Worked with a developer to test fixes and document changes.
+
+EDUCATION
+Bachelor of Science in Computer Science, Example University
+
+PROJECTS
+Built a small Python website that displays a fictional library catalogue.

@@ -175,6 +175,31 @@ def fully_judged_ids(data: dict, judgments: dict[str, dict[str, bool]]) -> list[
             and all(resume_id in runs and "error" not in runs[resume_id] for runs in runs_by_version.values())]
 
 
+def split_checked_cohort(data: dict, labels_path: Path) -> dict[str, dict]:
+    """Partition a test snapshot using the hand-checked catalogue coverage labels."""
+    if data["settings"].get("split") != "test":
+        raise ValueError("Checked cohort labels apply to test snapshots only")
+    cohort = data["settings"]["resume_ids"]
+    coverage = {}
+    with labels_path.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            resume_id, flag = row["resume_id"], row["in_job_pool"]
+            if resume_id in coverage or flag not in {"0", "1"}:
+                raise ValueError(f"Duplicate résumé or invalid pool flag: {resume_id}")
+            coverage[resume_id] = flag
+    if set(cohort) - coverage.keys():
+        raise ValueError("Checked cohort labels are missing test résumés")
+    groups = {}
+    for name, flag in (("in_pool", "1"), ("out_of_pool", "0")):
+        ids = [resume_id for resume_id in cohort if coverage[resume_id] == flag]
+        groups[name] = {
+            "settings": {**data["settings"], "resume_ids": ids},
+            "runs": {variant: {resume_id: runs[resume_id] for resume_id in ids if resume_id in runs}
+                     for variant, runs in data["runs"].items()},
+        }
+    return groups
+
+
 def score(data: dict, judgments: dict[str, dict[str, bool]]) -> dict:
     runs_by_version = data["runs"]
     complete = fully_judged_ids(data, judgments)
@@ -185,6 +210,9 @@ def score(data: dict, judgments: dict[str, dict[str, bool]]) -> dict:
         result[name].update({"completely_judged_resumes": len(complete),
                              "errors": sum("error" in run for run in runs.values()),
                              "empty_slots": sum(config.TOP_K - len(set(ids)) for ids in ranked.values()),
+                             "five_result_resumes": sum(len(ids) == config.TOP_K for ids in ranked.values()),
+                             "empty_result_resumes": sum(not ids for ids in ranked.values()),
+                             "median_seconds": median(run["seconds"] for run in runs.values()) if runs else None,
                              "mean_seconds": mean(run["seconds"] for run in runs.values()) if runs else None})
         if not complete:
             continue
@@ -300,6 +328,8 @@ def main():
         sub = commands.add_parser(name)
         sub.add_argument("snapshot", type=Path)
         sub.add_argument("target", type=Path)
+        if name in {"score", "compare"}:
+            sub.add_argument("--checked-labels", type=Path, help="Report by hand-checked test catalogue coverage")
         if name == "compare":
             sub.add_argument("--baseline", default="A")
     commands.add_parser("status").add_argument("snapshot", type=Path)
@@ -320,13 +350,21 @@ def main():
             if set(data["runs"]) - VERSIONS.keys():
                 cli.error("Diagnostics require an A–E study snapshot")
             print(json.dumps(diagnostics(data), indent=2, ensure_ascii=False))
-        elif args.command == "compare":
-            if args.baseline not in data["runs"]:
+        else:
+            if args.command == "compare" and args.baseline not in data["runs"]:
                 cli.error(f"Baseline {args.baseline} is absent from the snapshot")
             judgments = read_judgments(args.target, review_pool(data))
-            print(json.dumps(compare_precision(data, judgments, args.baseline), indent=2))
-        else:
-            print(json.dumps(score(data, read_judgments(args.target, review_pool(data))), indent=2))
+            def evaluate(snapshot):
+                if args.command == "compare":
+                    return compare_precision(snapshot, judgments, args.baseline)
+                return score(snapshot, judgments)
+
+            if args.checked_labels:
+                result = {name: {"cohort": len(group["settings"]["resume_ids"]), "metrics": evaluate(group)}
+                          for name, group in split_checked_cohort(data, args.checked_labels).items()}
+            else:
+                result = evaluate(data)
+            print(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":

@@ -20,6 +20,12 @@ SECTION_HEADINGS = {
     "volunteering": ("volunteering", "volunteer experience", "community involvement"),
 }
 _SECTION_BY_HEADING = {heading: section for section, headings in SECTION_HEADINGS.items() for heading in headings}
+_SPORTS_ROLE = re.compile(
+    r"\b(?:basketball|soccer|football|volleyball|baseball|softball|swimming|tennis|track and field|sports)\b"
+    r"[^,\n]{0,30}\bcoach\b|\bcoach\b[^,\n]{0,25}\b(?:basketball|soccer|football|volleyball|baseball|softball|swimming|tennis)\b",
+    re.I,
+)
+_ENGINEERING_HEADLINE = re.compile(r"\b(?:engineer|engineering intern|engineering technician)$", re.I)
 
 
 def _heading(line: str) -> str | None:
@@ -200,6 +206,15 @@ def _build_profile(resume_text: str, category: str, data: dict) -> Profile:
         fields["projects"] = [line.lstrip("-• ") for line in project_lines[:2]]
     # Use an unambiguous, resume-backed occupation when all recognized
     # roles agree. Conflicting roles leave the model category unchanged.
+    # Flattened résumés sometimes put their title on the same line as Summary.
+    headline = re.match(r"\A\s*([A-Z][A-Z '’&/-]{3,75}?)\s+(?=Summary\b|Professional Summary\b|Profile\b)",
+                        resume_text)
+    if headline:
+        title = headline.group(1).strip()
+        if _SPORTS_ROLE.search(title) and not any(_SPORTS_ROLE.search(role) for role in fields["roles"]):
+            fields["roles"].insert(0, title)
+        elif not fields["roles"] and _ENGINEERING_HEADLINE.search(title):
+            fields["roles"].append(title)
     role_categories = set()
     for role in fields["roles"]:
         if re.search(r"\b(?:software|web|backend|front.?end|full.?stack) (?:engineer|developer)\b|\bdata (?:analyst|scientist)\b", role, re.I):
@@ -208,6 +223,8 @@ def _build_profile(resume_text: str, category: str, data: dict) -> Profile:
             role_categories.add("ACCOUNTANT")
         if re.search(r"\b(?:registered nurse|licensed practical nurse)\b", role, re.I):
             role_categories.add("HEALTHCARE")
+        if _SPORTS_ROLE.search(role):
+            role_categories.add("FITNESS")
     if len(role_categories) == 1:
         category = role_categories.pop()
     years = data.get("years_experience")

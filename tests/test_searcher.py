@@ -88,15 +88,33 @@ def test_shortlist_promotes_evidenced_jobs_beyond_dense_cutoff(monkeypatch):
     wanted = Job("fit", "Data Analyst", "", "IT", ["SQL"])
     seen = Job("seen", "Data Analyst", "", "IT", ["SQL"])
     senior = Job("senior", "Senior Data Analyst", "", "IT", ["SQL"])
+    specialist = Job("specialist", "WalkMe Data Analyst", "", "IT", ["SQL"])
 
     class Index:
         def search(self, query, k):
-            return ([("seen", 0.8), ("senior", 0.75)] + [(job.job_id, 0.60) for job in matches] + [("fit", 0.55)])[:k]
+            return ([("seen", 0.8), ("senior", 0.75), ("specialist", 0.7)]
+                    + [(job.job_id, 0.60) for job in matches] + [("fit", 0.55)])[:k]
 
     monkeypatch.setattr(tools, "_index", Index)
-    monkeypatch.setattr(tools, "_jobs", lambda: {job.job_id: job for job in [*matches, wanted, seen, senior]})
+    monkeypatch.setattr(tools, "_jobs", lambda: {job.job_id: job for job in [*matches, wanted, seen, senior, specialist]})
     profile = Profile("IT", skills=["sql"], roles=["Data Analyst"], early_career=True)
     shortlist = tools.shortlist_jobs("analytics", profile, {"seen"})
     assert shortlist[0] == wanted
-    assert seen not in shortlist and senior not in shortlist
+    assert seen not in shortlist and senior not in shortlist and specialist not in shortlist
     assert len(shortlist) == config.REVIEW_LIMIT
+
+
+def test_role_shortlist_recovers_specific_title_outside_dense_candidates(monkeypatch):
+    specialist = Job("fit", "Franchise Support Consultant", "", "CONSULTANT")
+    unqualified = Job("senior", "Senior Franchise Consultant", "", "CONSULTANT")
+    dense = Job("dense", "Account Manager", "", "SALES")
+    previous = Job("prior", "Franchise Specialist", "", "CONSULTANT")
+    monkeypatch.setattr(tools, "_jobs", lambda: {j.job_id: j for j in (specialist, unqualified, dense, previous)})
+
+    def dense_search(query, profile, exclude):
+        assert exclude == {"prior", "fit"}
+        return [dense]
+
+    monkeypatch.setattr(tools, "shortlist_jobs", dense_search)
+    profile = Profile("APPAREL", roles=["Franchise Owner"], early_career=True)
+    assert tools.role_shortlist("Franchise Owner", profile, {"prior"}) == [specialist, dense]

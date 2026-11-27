@@ -1,6 +1,6 @@
 import pytest
 
-from evaluation.review import combine, freeze_batch
+from evaluation.review import agreement, combine, freeze_batch
 
 
 def test_review_keeps_blanks_and_disagreements_out_of_consensus():
@@ -14,6 +14,17 @@ def test_review_keeps_blanks_and_disagreements_out_of_consensus():
     assert len(pending) == 1
     with pytest.raises(ValueError, match="only pairs with conflicting"):
         combine(a, b, {("r", "b"): "1"})
+
+
+def test_agreement_uses_only_pairs_with_two_votes():
+    left = dict(enumerate(["0", "0", "1", "1", "1"]))
+    right = dict(enumerate(["0", "1", "1", "1", ""]))
+    assert agreement(left, right) == {
+        "pairs": 5, "double_reviewed": 4, "agreed": 3, "disagreed": 1,
+        "agreement": 0.75, "cohen_kappa": 0.5,
+    }
+    assert agreement({0: "0"}, {0: "0"})["cohen_kappa"] is None
+    assert agreement({0: ""}, {0: "0"})["agreement"] is None
 
 
 def test_freeze_batch_keeps_cohort_order_and_requires_every_selected_version():

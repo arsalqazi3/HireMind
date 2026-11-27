@@ -25,9 +25,12 @@ def test_senior_leadership_is_not_ranked_high_for_shorter_non_leadership_profile
 
 
 def test_progress_reports_actual_candidate_counts_and_estimate(monkeypatch):
+    from hiremind import tools
+
     jobs = [Job(str(i), "Developer", "", "IT") for i in range(3)]
     monkeypatch.setattr(parser, "parse", lambda text: Profile("IT"))
     monkeypatch.setattr(searcher, "search", lambda memory: jobs)
+    monkeypatch.setattr(tools, "shortlist_jobs", lambda *args: [])
     monkeypatch.setattr(critic, "judge", lambda profile, jobs: [Judgement(jobs[0].job_id, 7, "ok")])
     events = []
     result = agent.run("resume", progress=events.append)

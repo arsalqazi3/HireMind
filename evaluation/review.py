@@ -1,5 +1,6 @@
 """Prepare and reconcile independent judgments for a frozen ranking snapshot."""
 import argparse
+from collections import Counter
 import csv
 import json
 from pathlib import Path
@@ -96,6 +97,26 @@ def combine(left: dict, right: dict, resolutions: dict | None = None) -> tuple[l
     return accepted, pending
 
 
+def agreement(left: dict, right: dict) -> dict:
+    """Measure reviewer agreement before adjudication, using completed pairs."""
+    votes = Counter((vote, right[key]) for key, vote in left.items() if vote and right[key])
+    total = sum(votes.values())
+    agree = votes["0", "0"] + votes["1", "1"]
+    result = {"pairs": len(left), "double_reviewed": total, "agreed": agree,
+              "disagreed": total - agree, "agreement": None, "cohen_kappa": None}
+    if total:
+        observed = agree / total
+        expected = sum(
+            sum(n for (a, _), n in votes.items() if a == label)
+            * sum(n for (_, b), n in votes.items() if b == label)
+            for label in ("0", "1")
+        ) / total**2
+        result["agreement"] = observed
+        if expected < 1:
+            result["cohen_kappa"] = (observed - expected) / (1 - expected)
+    return result
+
+
 def main():
     cli = argparse.ArgumentParser(description=__doc__)
     sub = cli.add_subparsers(dest="command", required=True)
@@ -153,6 +174,7 @@ def main():
             table.writerows(rows)
     judged = ablation.read_judgments(args.output / "consensus.csv", pool)
     ablation.save_json(args.output / "metrics.json", ablation.score(snapshot, judged))
+    ablation.save_json(args.output / "agreement.json", agreement(a, b))
     print(f"Accepted {len(accepted) - len(pending)} of {len(accepted)} pairs. {len(pending)} remain open.")
 
 

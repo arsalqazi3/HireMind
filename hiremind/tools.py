@@ -33,6 +33,12 @@ def _title_terms(title: str) -> set[str]:
     return words - {"a", "an", "and", "in", "of", "the", "junior", "jr", "senior", "sr"}
 
 
+def _eligible_for_review(profile: Profile, job: Job) -> bool:
+    return not (matching.early_seniority_conflict(profile, job)
+                or matching.missing_required_credentials(profile, job)
+                or matching.missing_core_tools(profile, job))
+
+
 def shortlist_jobs(query: str, profile: Profile, exclude: set[str] | None = None) -> list[Job]:
     """Rerank a wider semantic pool using resume evidence before model review."""
     exclude = exclude or set()
@@ -49,7 +55,7 @@ def shortlist_jobs(query: str, profile: Profile, exclude: set[str] | None = None
             break
         considered += 1
         job = jobs[job_id]
-        if matching.early_seniority_conflict(profile, job) or matching.missing_title_credentials(profile, job):
+        if not _eligible_for_review(profile, job):
             continue
         title = _title_terms(job.title)
         role_match = max((len(role & title) / len(role | title) for role in roles), default=0.0)
@@ -60,6 +66,29 @@ def shortlist_jobs(query: str, profile: Profile, exclude: set[str] | None = None
         candidates.append((score, job))
     candidates.sort(key=lambda candidate: candidate[0], reverse=True)
     return [job for _, job in candidates[:config.REVIEW_LIMIT]]
+
+
+def role_shortlist(query: str, profile: Profile, exclude: set[str]) -> list[Job]:
+    """Give exact occupation matches space in the last search round."""
+    anchors = matching.occupation_terms(query)
+    lexical = []
+    if anchors:
+        for job in _jobs().values():
+            if job.job_id in exclude:
+                continue
+            title = matching.occupation_terms(job.title)
+            overlap = len(anchors & title)
+            if overlap:
+                lexical.append((overlap / len(anchors | title), job))
+    lexical.sort(key=lambda item: -item[0])
+    exact = []
+    for _, job in lexical:
+        if _eligible_for_review(profile, job):
+            exact.append(job)
+        if len(exact) == config.TOP_K:
+            break
+    semantic = shortlist_jobs(query, profile, exclude | {job.job_id for job in exact})
+    return [*exact, *semantic][:config.REVIEW_LIMIT]
 
 
 def filter_jobs(jobs: list[Job], category: str | None = None, level: str | None = None) -> list[Job]:

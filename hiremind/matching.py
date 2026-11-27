@@ -21,6 +21,42 @@ _EXPERIENCE = re.compile(
 )
 _CLINICAL_SCOPE = re.compile(r"\b(?:pediatric\w*|neonatal|NICU|ICU|obstetric\w*|critical care|labor and delivery)\b", re.I)
 _ROLE_SCOPE = re.compile(r"\b(?:data engineering|software development|software engineering)\b", re.I)
+_GENERIC_ROLE_WORDS = frozenset("""
+    a an and of the in for assistant associate junior senior staff intern manager
+    director specialist consultant analyst engineer engineering lead technician
+    team officer worker coach operations support professional head business
+""".split())
+
+
+def occupation_terms(title: str) -> set[str]:
+    """Keep occupational terms that distinguish roles across job categories."""
+    return set(re.findall(r"[^\W\d_]{4,}", title.casefold())) - _GENERIC_ROLE_WORDS
+
+
+_LEADERSHIP_TITLE = re.compile(
+    r"\b(?:franchise owner|(?:team|store) lead(?:er)?|manager|supervisor|director|head of)\b", re.I
+)
+
+
+def leadership_title_match(profile: Profile, job: Job) -> bool:
+    """Use documented leadership to separate otherwise equally scored roles."""
+    return bool(profile.roles and _LEADERSHIP_TITLE.search(profile.roles[0]) and
+                _LEADERSHIP_TITLE.search(job.title))
+
+
+def same_posting_template(first: Job, second: Job) -> bool:
+    """Identify substantially identical listings that share a title."""
+    if (first.category != second.category or
+        first.work_type != second.work_type or
+        first.title.casefold().split() != second.title.casefold().split()):
+        return False
+
+    def shingles(description: str) -> set:
+        words = re.findall(r"\w+", description.casefold())
+        return set(zip(words, words[1:], words[2:], words[3:], words[4:]))
+
+    left, right = shingles(first.description), shingles(second.description)
+    return min(len(left), len(right)) >= 35 and len(left & right) / len(left | right) >= .95
 
 
 def _experience_mentions(text: str):
@@ -52,7 +88,7 @@ def _requirements(description: str) -> str:
     required = (
         r"(?:minimum |basic |required )?(?:requirements|qualifications)"
         r"|(?:job |position )requirements|required skills(?: and experience)?"
-        r"|what (?:experience you need|you(?:['’]ll| will) (?:bring|need))"
+        r"|what (?:experience you need|you(?:['’]ll| will) (?:bring|need)|you (?:bring|need)(?: to succeed)?)"
     )
     other = (
         r"preferred (?:skills|qualifications|experience)|nice to have|bonus (?:skills|qualifications)"
@@ -179,21 +215,24 @@ def missing_core_tools(profile: Profile, job: Job) -> list[str]:
     tools = {"Wix Studio": r"\bwix(?:\s+studio)?\b", "React": r"\breact(?:\.?js)?\b", "Angular": r"\bangular(?:js)?\b", "Swift": r"\bswift\b", "Java": r"\bjava\b",
              "Splunk": r"\bsplunk\b", "AI/ML": r"\b(?:ai\s*/\s*ml|machine learning)\b",
              "Shopify": r"\bshopify\b", ".NET": r"\.net\b", "DevOps": r"\bdevops\b", "Node.js": r"\bnode(?:\.?js|\s+js)\b",
-             "Salesforce": r"\bsalesforce\b", "Ext JS": r"\bext\s?js\b"}
-    known = " ".join(profile.skills).casefold()
+             "Salesforce": r"\bsalesforce\b", "Ext JS": r"\bext\s?js\b",
+             "WalkMe": r"\bwalkme\b", "ServiceNow": r"\bservicenow\b", "Workday": r"\b(?-i:Workday|WORKDAY)\b",
+             "SAP PP": r"\bSAP\s+(?:PP\b|production planning\b)", "PeopleSoft": r"\bpeoplesoft\b"}
+    known = "\n".join([*profile.skills, *profile.roles, *profile.projects, *profile.experience_evidence])
+    explicit_title = re.search(r"\bjob\s+title\s*:\s*([^\n.]{1,80})", job.description[:400], re.I)
+    titles = [job.title, explicit_title.group(1) if explicit_title else ""]
     missing = []
     for label, pattern in tools.items():
         if re.search(pattern, known, re.I):
             continue
-        explicit_title = re.search(r"\bjob\s+title\s*:\s*([^\n.]{1,80})", job.description[:400], re.I)
-        titles = [job.title, explicit_title.group(1) if explicit_title else ""]
         title_hit = any(re.search(pattern, title, re.I) and not re.search(r"\b(?:or|either)\b", title, re.I)
                         for title in titles)
         hard_requirement = False
         for hit in re.finditer(pattern, job.description, re.I):
             before = job.description[max(0, hit.start() - 55):hit.start()]
             after = job.description[hit.end():hit.end() + 55]
-            if re.search(r"^\s*(?:or\b|[^.\n]{0,25}\b(?:preferred|optional|is a plus)\b)", after, re.I):
+            if re.search(r"\bor[ \t]*$", before, re.I) or re.search(
+                    r"^\s*(?:or\b|[^.\n]{0,25}\b(?:preferred|optional|is a plus)\b)", after, re.I):
                 continue
             if (re.search(r"\b(?:must|essential|speciali[sz]ed in|proven experience|requires?|well versed in|proficiency in)\b[^.\n]{0,40}$", before, re.I)
                     or re.search(r"^[^.\n]{0,25}\b(?:required(?:\b|(?-i:(?=[A-Z])))|is a must\b)", after, re.I)):
@@ -212,6 +251,18 @@ _CREDENTIALS = {
 }
 
 
+def _has_cpa_evidence(profile: Profile) -> bool:
+    """Distinguish an accounting credential from cost per acquisition."""
+    experience = "\n".join([*profile.roles, *profile.education, *profile.experience_evidence])
+    if re.search(r"\bcertified public accountant\b|\bCPA[ \t]+(?:licen[cs]e|certification)\b|"
+                 r"\b(?:licensed|active)[ \t]+CPA\b", experience, re.I):
+        return True
+    accounting_work = profile.category == "ACCOUNTANT" or any(
+        re.search(r"\b(?:accountan\w*|auditor|audit manager|tax manager|controller)\b", role, re.I)
+        for role in profile.roles)
+    return accounting_work and any(_CREDENTIALS["CPA"].search(item) for item in [*profile.skills, *profile.roles])
+
+
 def missing_title_credentials(profile: Profile, job: Job) -> list[str]:
     """Flag explicit credential titles when the resume gives no corresponding evidence."""
     named = {name for name, pattern in _CREDENTIALS.items() if pattern.search(job.title)}
@@ -219,9 +270,34 @@ def missing_title_credentials(profile: Profile, job: Job) -> list[str]:
         return []
     evidence = " ".join([*profile.roles, *profile.skills, *profile.education])
     supported = {name for name in named if _CREDENTIALS[name].search(evidence)}
+    if "CPA" in supported and not _has_cpa_evidence(profile):
+        supported.remove("CPA")
     if len(named) > 1 and supported and re.search(r"\bor\b|/", job.title, re.I):
         return []
     return sorted(named - supported)
+
+
+def missing_required_credentials(profile: Profile, job: Job, requirement_text: str | None = None) -> list[str]:
+    """Check credential titles and a small set of explicit requirements in the posting."""
+    missing = missing_title_credentials(profile, job)
+    text = _requirements(job.description) if requirement_text is None else requirement_text
+    evidence = "\n".join([*profile.roles, *profile.skills, *profile.education, *profile.experience_evidence])
+    cpa_license = re.search(r"CPA\s+(?i:licen[cs]e)(?=\b|[A-Z])", text)
+    if cpa_license and not _has_cpa_evidence(profile):
+        suffix = text[cpa_license.end():cpa_license.end() + 35]
+        if "CPA" not in missing and not re.search(r"^[^.\n·•]{0,22}\b(?:preferred|optional|or)\b", suffix, re.I):
+            missing.append("CPA")
+    if re.search(r"\bintern(?:ship)?\b", job.title, re.I):
+        enrollment = re.search(r"(?:^|[\n·•;])\s*(?:[-*]\s*)?currently\s+(?:pursuing|enrolled in)\b[^\n·•;]*",
+                               text, re.I)
+        allows_graduates = re.search(r"\b(?:new|recent)\s+graduates?\s+(?:are\s+)?(?:welcome|eligible)\b",
+                                    job.description, re.I)
+        enrolled = re.search(r"\b(?:currently (?:pursuing|enrolled)|in progress|expected graduation)\b|\bexpected\s+20\d\d\b",
+                             evidence, re.I)
+        if enrollment and not enrolled and not allows_graduates and not re.search(
+                r"\b(?:preferred|optional|or have completed|or have graduated)\b", enrollment.group(), re.I):
+            missing.append("current student enrollment")
+    return missing
 
 
 def score_weighted(profile, job, requirements_score, preferences=None, mode="standard", focused_notes=(),
@@ -233,7 +309,9 @@ def score_weighted(profile, job, requirements_score, preferences=None, mode="sta
     have = {s.casefold(): s for s in profile.skills}
     shared = sorted((s for s in job.skills if s.casefold() in have), key=str.casefold)
     text = _requirements(job.description)
-    required, missing, years = _requirement_evidence(text, have)
+    experience_skills = extract_skills("\n".join([*profile.roles, *profile.projects, *profile.experience_evidence]))
+    requirement_skills = {**have, **{s.casefold(): s for s in experience_skills}}
+    required, missing, years = _requirement_evidence(text, requirement_skills)
     if years is None and not text:
         years = _experience_years(job.description)
     notes = []
@@ -243,7 +321,11 @@ def score_weighted(profile, job, requirements_score, preferences=None, mode="sta
         # clause; do not penalize them again as individually required skills.
         coverage = (len(required) - len(missing)) / len(required)
         req += 1.5 * (coverage - .5)
-    if profile.category not in {config.UNKNOWN_CATEGORY, job.category} and not shared:
+        if coverage == 0 and len(required) >= 2 and req > 7.9:
+            req = 7.9
+            notes.append("Requirements score capped below 8/10 because none of the detected required skills had résumé evidence.")
+    same_occupation = any(occupation_terms(role) & occupation_terms(job.title) for role in profile.roles[:4])
+    if profile.category not in {config.UNKNOWN_CATEGORY, job.category} and not shared and not same_occupation:
         req -= 2.5
     if profile.category == config.UNKNOWN_CATEGORY and not profile.roles and not shared:
         req = min(req, 5.9)
@@ -255,7 +337,7 @@ def score_weighted(profile, job, requirements_score, preferences=None, mode="sta
     core_missing = missing_core_tools(profile, job)
     if core_missing:
         req = min(req, 5.9)
-    credentials = missing_title_credentials(profile, job)
+    credentials = missing_required_credentials(profile, job, text)
     if credentials:
         req = min(req, 5.9)
     req = round(max(0, min(10, req)), 1)
@@ -271,7 +353,8 @@ def score_weighted(profile, job, requirements_score, preferences=None, mode="sta
     if core_missing:
         notes.append("Core tools named in the job title or an explicit requirement were not detected in the profile: " + ", ".join(core_missing) + ".")
     if credentials:
-        notes.append("Credentials named in the job title with no corresponding resume evidence: " + ", ".join(credentials) + ".")
+        notes.append("Credentials or enrollment named in the posting with no corresponding résumé evidence: "
+                     + ", ".join(credentials) + ".")
     experience = None
     scope = experience_scope(job, text)
     if scope == "clinical":

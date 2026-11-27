@@ -278,3 +278,204 @@ score unknown. Historical job availability, licensure and employment eligibility
 require separate verification.
 
 The earlier isolated adapter pilots and concrete matching regressions are documented in [harness validation](harness_validation_2026-11-18.md).
+
+## November 24 evaluation update
+
+The Colab step-800 checkpoint covers Parser, Searcher and Critic. The local
+mixed pilot remains the checkpoint behind the historical B, C and E runs.
+The grounded Writer uses checked résumé evidence and an editable template.
+[Colab training run](training_colab_2026-11-24.md)
+
+### Base model and step 800 on Mac GPU
+
+The comparison ran on MPS with greedy decoding. Each checkpoint answered
+the same 100 validation prompts, excluding prompts sampled for checkpoint
+selection. The references came from the Parser, Critic and Searcher
+training rules. The comparison used the script's per-role token limits.
+Production parsing has a longer output budget and can retry.
+
+| Measure | Base | Step 800 |
+|---|---:|---:|
+| Parser valid JSON (20) | 7 | 20 |
+| Parser category matches (20) | 4 | 17 |
+| Parser years-of-experience matches (20) | 0 | 16 |
+| Parser role evidence F1 | 0.226 | 0.945 |
+| Parser education evidence F1 | 0.025 | 0.833 |
+| Critic valid scores (40) | 32 | 40 |
+| Critic score MAE among valid responses | 2.831 | 0.052 |
+| Critic scores within one point (40) | 8 | 40 |
+| Searcher valid tool names (40) | 40 | 40 |
+| Searcher correct tool choice (40) | 15 | 34 |
+| Searcher exact tool and arguments (40) | 0 | 29 |
+
+The adapter confused Public Relations with Digital Media on two Parser
+examples. The base Searcher always called `search_jobs`. Step 800 matched
+all 19 expected stops, but also stopped in all six cases that called for
+`filter_jobs`. It chose the right tool with different arguments on five
+search examples. The paired ranking study tests whether these decisions
+affect the jobs returned and how often applicants get five results.
+
+### Held-out catalogue coverage
+
+The category review moved 23 résumés to a different category within the
+catalogue and identified nine whose fields fall outside the catalogue.
+On the 91 in-pool résumés, each variant had 455 possible top-five slots.
+Matching the checked category describes the field of a returned job.
+Human judgments of field, requirements and seniority are pending.
+[Checked category manifest](../evaluation/labels/test_categories.csv)
+
+| Historical variant | Slots filled, in pool | Jobs in the checked category | Five results, in pool | Slots filled, out of pool |
+|---|---:|---:|---:|---:|
+| A | 455 | 257 | 91 | 45 |
+| B | 455 | 237 | 91 | 45 |
+| C | 327 | 156 | 51 | 33 |
+| D | 455 | 280 | 91 | 45 |
+| E | 360 | 177 | 61 | 34 |
+
+The full packet has 1,607 pairs. The first 12 résumés account for 198 pairs
+and appear first in each reviewer workbook. At preparation, the packet has
+zero human judgments and zero fully judged résumés. Missing slots limit the
+best attainable in-pool precision@5 to 0.719 for C and 0.791 for E. The upper
+bound is 1.000 for A, B and D. The lower bound is zero for all five variants.
+
+An exploratory assistant review of those first 198 pooled pairs recorded 145
+yes/no judgments and left 53 uncertain. All 12 résumés are in the checked
+in-pool cohort. Scoring the saved judgments gives these precision@5 bounds,
+with empty result slots counted as misses:
+
+| Variant | Confirmed relevant top-five slots | Unjudged top-five slots | Precision@5 bounds |
+|---|---:|---:|---:|
+| A | 17 | 15 | 0.283–0.533 |
+| B | 17 | 19 | 0.283–0.600 |
+| C | 16 | 12 | 0.267–0.467 |
+| D | 16 | 13 | 0.267–0.483 |
+| E | 16 | 13 | 0.267–0.483 |
+
+The source is `outputs/evaluation_2026-11-24/ai_review/test_starter_review.csv`.
+No résumé has every pooled posting judged, so a paired precision estimate and
+bootstrap interval are unavailable. These assistant judgments are exploratory;
+independent human review remains pending.
+
+The base Parser returned a profile for all 91 in-pool test résumés,
+including five with an unknown category. It agreed with the original
+dataset on 60 of 91 (65.9%) and with the checked categories on 60 of 91
+(65.9%). The identical totals cover different cases. Eight predictions
+agreed only with the original label, and eight agreed only with the
+checked label.
+
+### Exploratory in-depth review study
+
+A separate saved study compared standard and in-depth review on all 100 test
+résumés, with the step-800 adapter in both modes. Its pooled postings were
+graded by an assistant or a local model against résumé and listing text.
+Those grades are exploratory and do not replace the independent judgments
+needed for the frozen A–E evaluation.
+
+| Checked cohort and mode | Five results | Median time | Precision@5 bounds |
+|---|---:|---:|---:|
+| In pool, standard | 80/91 | 46.8 s | 0.560–0.673 |
+| In pool, in depth | 77/91 | 66.4 s | 0.538–0.648 |
+| Out of pool, standard | 6/9 | 77.9 s | 0.400–0.556 |
+| Out of pool, in depth | 6/9 | 76.6 s | 0.444–0.578 |
+
+For the 38 in-pool résumés whose pooled postings all received determinate
+grades, standard precision@5 was 0.637 and in-depth precision@5 was 0.605.
+The paired difference was −0.032, with a 95% résumé-bootstrap interval from
+−0.084 to +0.005. This interval includes zero. The saved study therefore
+does not establish a ranking improvement from in-depth review.
+The detailed assessments and run settings are under `outputs/depth_study/`.
+A targeted retrieval follow-up reused the study's five strongest and five
+weakest determinate standard cases. With the step-800 adapter and depth off,
+the strongest five stayed at 25 filled slots and 1.00 estimated precision@5.
+The weakest five gained eight filled slots (11 to 19), and their estimated
+precision@5 rose from 0.12 to 0.44. Three improved and two tied under the
+saved grades. This selected ten-case check does not estimate a cohort-wide
+effect. Its case details are under `outputs/retrieval_ten/`.
+
+### Validation and checkpoint selection
+
+The original validation sheets supplied 230 reviewed votes over 200 job
+pairs. They contained suggested verdicts before review. The calibration
+input has 194 resolved pairs, with 83 relevant and 111 unsuitable. Six pairs
+had conflicting verdicts and were excluded. The 30 double-reviewed pairs
+had 80% agreement and Cohen's kappa of 0.59.
+
+The relevance rule used all 194 resolved pairs across 40 résumés. Five
+résumé-grouped folds gave 60.8% balanced accuracy. The selected threshold
+was 0.45. Skill overlap had the largest positive coefficient. A shortfall
+in comparable experience reduced the fitted score, and the senior-title
+conflict feature carried zero weight in this fit. The result is a validation
+reference for relevance, with the production scoring weights as specified
+above.
+
+The shared handoff also requested a calibration with step 800 enabled for
+the Parser. It used the same 194 pairs across 40 résumés and the same five
+grouped folds. Balanced accuracy rose from 60.8% with the base Parser to
+67.7% with step 800. The selected threshold rose from 0.45 to 0.55.
+Skill overlap remained the strongest positive coefficient. The fitted
+coefficient for an exact category match changed from +0.15 to −0.94,
+which warrants review before using the rule to score matches. The
+calibration measures agreement with the reviewed validation labels.
+
+The base and step-800 workflows completed the same 40 seeded validation
+résumés on MPS with zero execution errors. Runs were sequential. The
+catalogue, scoring weights, search budget and Writer were fixed.
+
+| Validation variant | Five results | Slots filled | Empty lists | Retries | Median time |
+|---|---:|---:|---:|---:|---:|
+| D, base model | 40/40 | 200/200 | 0 | 1 | 62.4 s |
+| E, Colab step 800 | 33/40 | 184/200 | 0 | 31 | 57.8 s |
+
+The agreed gate required at least the base model's five-result coverage and
+a positive lower bound on the paired 95% precision@5 interval. Step 800
+missed the coverage criterion, so the base model remains the demo
+checkpoint. Each of the seven short adapter lists used both retries.
+The saved rankings establish where the lists came up short. The standalone
+Searcher benchmark identifies a possible source to investigate.
+
+The 370 pooled validation pairs are ready for independent review.
+Human judgments will establish whether either workflow returned more
+relevant jobs within its available slots.
+Only three of those 370 pairs overlap the 200 pairs in the earlier reviewed
+calibration set. The overlapping verdicts cover two résumés (one relevant,
+two unsuitable), so the calibration labels cannot establish ranking
+precision for this cohort.
+
+An exploratory local Qwen3-8B review judged 340 of the 370 pooled validation
+pairs and left 30 uncertain. The base workflow's precision@5 bounds are
+0.545–0.620, compared with 0.435–0.515 for step 800. On the 16 résumés whose
+pooled postings all received determinate grades, precision@5 was 0.550 for
+base and 0.488 for step 800. The paired change was −0.063, with a 95%
+résumé-bootstrap interval from −0.200 to +0.100. The interval includes zero.
+These are AI judgments, so they do not satisfy the independent human review
+gate. The judgments and calculations are under
+`outputs/evaluation_2026-11-24/ai_review/validation/`.
+
+### Reproduction
+
+The run's local inputs, logs, snapshots and reviewer workbooks are under
+`outputs/evaluation_2026-11-24/`. The input manifest records the repository
+revision, device and hashes of the catalogue, index, résumé data, checked
+labels, historical snapshot and adapter weights. Keep workbooks and per-case
+outputs outside Git because they can contain dataset text.
+
+```bash
+run=outputs/evaluation_2026-11-24
+adapter=HireMind-shared/models/slm/qwen3-0.6b-lora/adapter-step800
+export HIREMIND_DEVICE=mps HF_HUB_OFFLINE=1
+python -m evaluation.compare_adapter --adapter "$adapter" \
+  --data HireMind-shared/data/processed/training --out "$run/adapter_comparison.json"
+python -m evaluation.calibrate --output "$run/relevance_rule.json"
+HIREMIND_ADAPTER_DIR="$adapter" HIREMIND_ADAPTER_ROLES=parser \
+  python -m evaluation.calibrate --output "$run/relevance_rule_step800.json"
+python -m evaluation.ablation collect --split val --limit 40 --versions D E \
+  --adapter "$adapter" --output "$run/validation_step800.json"
+python -m scripts.validate_parser --checked-labels evaluation/labels/test_categories.csv \
+  --output "$run/test_parser_base.json"
+```
+
+Reconcile each pair of reviewer workbooks against its own ranking snapshot.
+Retain both original workbooks and use the consensus CSV for paired metrics.
+If step 800 advances, preserve historical E and pool new step-800 jobs from
+the same 100 test résumés before evaluating that checkpoint.
+[Review and scoring commands](../docs/relevance_labelling.md)

@@ -4,8 +4,11 @@ import platform
 import warnings
 from functools import lru_cache
 from pathlib import Path
+from threading import Lock
 
 from hiremind import config
+
+_MLX_LOCK = Lock()
 
 
 class PromptTooLong(ValueError):
@@ -49,21 +52,67 @@ def load(model_dir: str | None = None, adapter_dir: str | None = None):
     return tokenizer, model
 
 
-def format_prompt(tokenizer, task: str, prompt: str) -> str:
+def format_prompt(tokenizer, task: str, prompt: str, system_prompt: str | None = None) -> str:
+    messages = [{"role": "user", "content": f"{config.TASK_TOKENS[task]}\n{prompt}"}]
+    if system_prompt:
+        messages.insert(0, {"role": "system", "content": system_prompt})
     return tokenizer.apply_chat_template(
-        [{"role": "user", "content": f"{config.TASK_TOKENS[task]}\n{prompt}"}],
-        tokenize=False, add_generation_prompt=True, enable_thinking=False,
+        messages, tokenize=False, add_generation_prompt=True, enable_thinking=False,
     )
 
 
-def generate(task: str, prompt: str, max_new_tokens: int = 512) -> str:
-    """Put the task token from config.TASK_TOKENS in front of `prompt` and generate."""
-    import torch
+@lru_cache(maxsize=2)
+def _load_mlx(adapter_dir: str | None):
+    if platform.system() != "Darwin" or platform.machine() != "arm64":
+        raise RuntimeError("The MLX backend requires Apple Silicon macOS")
+    os.environ.setdefault("HF_HOME", str(config.MODELS_DIR / "huggingface"))
+    try:
+        from mlx_lm import load as mlx_load
+    except ImportError as exc:
+        raise RuntimeError("Install mlx-lm to use HIREMIND_BACKEND=mlx") from exc
+    model, tokenizer = mlx_load(config.BASE_SLM)
+    if adapter_dir:
+        from hiremind.mlx_adapter import apply_peft_lora
 
+        apply_peft_lora(model, adapter_dir)
+    return model, tokenizer
+
+
+def _generate_mlx(task: str, prompt: str, max_new_tokens: int, system_prompt: str | None,
+                  adapter_dir: str | None) -> str:
+    # MLX LM shares the tokenizer's streaming detokenizer across generations.
+    with _MLX_LOCK:
+        model, tokenizer = _load_mlx(adapter_dir)
+        from mlx_lm import generate as mlx_generate
+        from mlx_lm.sample_utils import make_sampler
+
+        text = format_prompt(tokenizer, task, prompt, system_prompt)
+        tokens = tokenizer.encode(text, add_special_tokens=False)
+        if len(tokens) + max_new_tokens > 16_384:
+            raise PromptTooLong("Prompt exceeds the 16K context budget")
+        return mlx_generate(model, tokenizer, prompt=tokens, max_tokens=max_new_tokens,
+                            sampler=make_sampler(temp=0.0))
+
+
+def generate(task: str, prompt: str, max_new_tokens: int = 512, *, system_prompt: str | None = None) -> str:
+    """Put the task token from config.TASK_TOKENS in front of `prompt` and generate."""
     adapter_dir = os.environ.get("HIREMIND_ADAPTER_DIR")
     selected_roles = {role.strip() for role in os.environ.get("HIREMIND_ADAPTER_ROLES", "parser").split(",")}
-    tokenizer, model = load(adapter_dir=adapter_dir) if adapter_dir and task in selected_roles else load()
-    text = format_prompt(tokenizer, task, prompt)
+    use_adapter = bool(adapter_dir and task in selected_roles)
+    backend = os.environ.get("HIREMIND_BACKEND", "pytorch").lower()
+    if backend not in {"pytorch", "mlx"}:
+        raise ValueError("HIREMIND_BACKEND must be pytorch or mlx")
+    device_setting = os.environ.get("HIREMIND_DEVICE", "auto").lower()
+    if device_setting not in {"auto", "cpu", "mps"}:
+        raise ValueError("HIREMIND_DEVICE must be auto, cpu, or mps")
+    if backend == "mlx" and task != "writer" and device_setting != "cpu":
+        return _generate_mlx(task, prompt, max_new_tokens, system_prompt,
+                             adapter_dir if use_adapter else None)
+
+    import torch
+
+    tokenizer, model = load(adapter_dir=adapter_dir) if use_adapter else load()
+    text = format_prompt(tokenizer, task, prompt, system_prompt)
     inputs = tokenizer(text, return_tensors="pt")
     if inputs.input_ids.shape[1] + max_new_tokens > 16_384:
         raise PromptTooLong("Prompt exceeds the 16K context budget")
@@ -79,7 +128,7 @@ def generate(task: str, prompt: str, max_new_tokens: int = 512) -> str:
         try:
             tokens = complete()
         except (RuntimeError, NotImplementedError) as exc:
-            if device != "mps" or os.environ.get("HIREMIND_DEVICE", "auto").lower() != "auto":
+            if device != "mps" or device_setting != "auto":
                 raise
             warnings.warn(f"MPS generation failed; using CPU: {exc}")
             model.to("cpu")

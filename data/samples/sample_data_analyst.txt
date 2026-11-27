@@ -1,0 +1,20 @@
+TEST RESUME — FICTIONAL
+Samira Khan
+Data Analyst
+
+PROFILE
+Data analyst with 3 years of experience building reports and analyzing operational data.
+
+SKILLS
+SQL, Python, Excel, Tableau, Power BI, PostgreSQL, Git
+
+EXPERIENCE
+Data Analyst, Example Retail | 2023–2026
+- Wrote SQL queries to prepare sales and inventory reports.
+- Built Tableau dashboards and Python scripts to clean monthly data.
+
+EDUCATION
+Bachelor of Science in Statistics, Example University
+
+PROJECTS
+Built a Python and SQL project to analyze fictional store sales.

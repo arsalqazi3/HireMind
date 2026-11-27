@@ -39,6 +39,23 @@ def test_completed_empty_rankings_count_as_five_empty_slots():
     assert report["completely_judged_resumes"] == 1
     assert report["precision_at_5"] == 0
     assert report["empty_slots"] == 5
+    assert report["empty_result_resumes"] == 1
+    assert report["five_result_resumes"] == 0
+
+
+def test_checked_cohort_preserves_order_and_rejects_missing_labels(tmp_path):
+    labels = tmp_path / "checked.csv"
+    labels.write_text("resume_id,in_job_pool\n1,1\n2,0\n3,1\n")
+    data = {"settings": {"split": "test", "resume_ids": ["3", "2", "1"]}, "runs": {
+        "D": {resume_id: {"job_ids": []} for resume_id in ("1", "2", "3")},
+    }}
+    groups = ablation.split_checked_cohort(data, labels)
+    assert groups["in_pool"]["settings"]["resume_ids"] == ["3", "1"]
+    assert list(groups["in_pool"]["runs"]["D"]) == ["3", "1"]
+    assert list(groups["out_of_pool"]["runs"]["D"]) == ["2"]
+    labels.write_text("resume_id,in_job_pool\n1,1\n2,0\n")
+    with pytest.raises(ValueError, match="missing test résumés"):
+        ablation.split_checked_cohort(data, labels)
 
 
 def test_review_pool_and_score_use_the_same_deduplicated_top_five():

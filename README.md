@@ -10,6 +10,9 @@ model uses the Metal GPU; it falls back to the CPU when unavailable. Set
 AI4015 Agentic Artificial Intelligence, FAST NUCES Karachi.
 Muhammad Hassaan (23K-0603) and Arslan Asad (23I-2505).
 
+[Course project report](reports/final_project.md) · [Live demo runbook](docs/demo.md) ·
+[Full evaluation](reports/evaluation_2026-11-18.md)
+
 ## How it works
 
 The current prototype uses the local base model across four roles. Dedicated
@@ -26,10 +29,11 @@ and mixed LoRA adapters are available for experiments:
 3. **Critic** scores each job out of 10. If the best score is under the cutoff
    (starts at 6), it sends feedback to the Searcher.
 4. **Writer** loads [its cover-letter skill](hiremind/skills/cover-letter/SKILL.md)
-   for each draft. The local model selects links between résumé examples and
-   specific job duties or skills. HireMind checks the selected IDs and assembles
-   the letter from the original facts, with an evidence-based fallback when
-   model output is unavailable or invalid. Contact details remain editable.
+   as system guidance. The Writer uses Qwen3-8B when it is already available
+   through local Ollama. It writes a role-specific opening and closing around
+   a résumé example, then checks the claims in a second pass. If Ollama is unavailable,
+   it tries the project's smaller model. A draft that fails the checks falls back to
+   source text. The applicant reviews and edits the draft before sending.
 
 Memory: semantic (the profile), episodic (queries tried, job ids seen, rejection
 reasons, Critic feedback) and short-term (the current run).
@@ -56,6 +60,35 @@ python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 ```
+
+The Writer looks for `qwen3:8b` on the local Ollama server. Set
+`HIREMIND_WRITER_OLLAMA_MODEL` to a different installed model tag, or set it to an
+empty string to use the project's Qwen3-0.6B model directly.
+
+### Optional MLX matching on Apple Silicon
+
+PyTorch is the default. To try MLX with the same Qwen3-0.6B base weights, install
+MLX LM in the project environment and opt in when starting Streamlit.
+
+```bash
+python -m pip install mlx-lm
+HIREMIND_BACKEND=mlx streamlit run app/streamlit_app.py
+```
+
+MLX runs the Parser, Searcher and Critic with the base weights or the step-800
+LoRA adapter. To run step 800 on all three matching roles, use the existing PEFT
+checkpoint from the shared project folder:
+
+```bash
+HIREMIND_BACKEND=mlx \
+HIREMIND_ADAPTER_DIR="HireMind-shared/models/slm/qwen3-0.6b-lora/adapter-step800" \
+HIREMIND_ADAPTER_ROLES=parser,searcher,critic \
+streamlit run app/streamlit_app.py
+```
+
+The Writer's small-model fallback and explicit CPU runs use PyTorch. Greedy
+generation can return different wording, search queries or rankings across
+backends. [M1 Pro benchmark](reports/mlx_benchmark.md)
 
 Download these into `data/raw/`:
 

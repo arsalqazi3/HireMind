@@ -1,6 +1,6 @@
 # LoRA training on Colab (2026-11-24)
 
-The four-role adapter for Qwen3-0.6B, trained with `training/train_lora.py` from the notebook `training/train_lora_colab.ipynb` on a free Colab T4 GPU.
+The Parser, Critic and Searcher adapter for Qwen3-0.6B was trained with `training/train_lora.py` from `training/train_lora_colab.ipynb` on a free Colab T4 GPU. The app uses the grounded cover-letter Writer.
 
 ## Setup
 

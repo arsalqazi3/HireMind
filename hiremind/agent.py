@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from time import monotonic
 from typing import Callable
 
-from hiremind.schemas import Judgement, Preferences, Profile, Step
+from hiremind.schemas import Job, Judgement, Preferences, Profile, Step
 from hiremind import config, matching, tools
 from hiremind.memory import Memory
 from hiremind.roles import critic, parser, searcher, writer
@@ -29,6 +29,30 @@ def _rank_key(judgement: Judgement) -> tuple[float, float, float]:
     return judgement.score, breakdown.requirements or 0, experience
 
 
+def _rank_jobs(judgements: list[Judgement], jobs: dict[str, Job], profile: Profile,
+               preferences: Preferences | None) -> list[Judgement]:
+    ordered = sorted(judgements, key=lambda item: (
+        *_rank_key(item), matching.leadership_title_match(profile, jobs[item.job_id])
+    ), reverse=True)
+    primary, similar = [], []
+    by_title: dict[str, list[Job]] = {}
+    for item in ordered:
+        job = jobs[item.job_id]
+        group = by_title.setdefault(" ".join(job.title.casefold().split()), [])
+        matches = [prior for prior in group if matching.same_posting_template(prior, job)]
+        location = (job.location or "").casefold().strip()
+        if any((prior.location or "").casefold().strip() == location and
+               prior.description.casefold().split() == job.description.casefold().split()
+               for prior in matches):
+            continue
+        group.append(job)
+        if matches and not (preferences and preferences.location):
+            similar.append(item)
+        else:
+            primary.append(item)
+    return [*primary, *similar]
+
+
 def run(resume_text: str, use_critic: bool = True, use_episodic: bool = True,
         progress: Callable[[dict], None] | None = None, preferences: Preferences | None = None,
         in_depth: bool = False) -> Result:
@@ -42,16 +66,29 @@ def run(resume_text: str, use_critic: bool = True, use_episodic: bool = True,
     profile = parser.parse(resume_text)
     memory = Memory(semantic=profile, use_episodic=use_episodic)
     ranked: dict[str, Judgement] = {}
+    eligible_jobs: dict[str, Job] = {}
+    ordered = []
     scored_ids: set[str] = set()
     retries = 0
     round_rankings = []
+    role_query = next((" ".join(role.split()[:8]) for role in profile.roles[:4]
+                       if matching.occupation_terms(role)), None)
     for round_number in range(config.MAX_SEARCH_ROUNDS):
         report(phase="searching", round=round_number + 1)
-        jobs = searcher.search(memory)
+        if (use_critic and use_episodic and role_query
+                and round_number == config.MAX_SEARCH_ROUNDS - 1 and len(ordered) < config.TOP_K):
+            excluded = memory.episodic.seen_job_ids | scored_ids
+            jobs = tools.role_shortlist(role_query, profile, excluded)
+            memory.episodic.seen_job_ids.update(job.job_id for job in jobs)
+            memory.short_term.append(Step(
+                state={}, action="search_jobs", args={"query": role_query},
+                result=[{"job_id": job.job_id, "title": job.title} for job in jobs],
+                feedback="Used the résumé's stated role to search for additional candidates.",
+            ))
+        else:
+            jobs = searcher.search(memory)
         if jobs and use_episodic:
             jobs = [job for job in jobs if job.job_id not in scored_ids]
-            if not jobs:
-                break
         if not jobs:
             tried = {q.casefold() for q in memory.episodic.queries}
             query = next((q for q in searcher.profile_queries(profile) if q.casefold() not in tried), None)
@@ -66,6 +103,9 @@ def run(resume_text: str, use_critic: bool = True, use_episodic: bool = True,
                                               result=[{"job_id": job.job_id, "title": job.title} for job in jobs],
                                               feedback="Used an alternative profile-based query after an empty search."))
         if not jobs:
+            if use_critic and use_episodic and role_query and round_number < config.MAX_SEARCH_ROUNDS - 1:
+                retries += 1
+                continue
             break
         if use_episodic:
             scored_ids.update(job.job_id for job in jobs)
@@ -111,14 +151,17 @@ def run(resume_text: str, use_critic: bool = True, use_episodic: bool = True,
                         and j.breakdown.qualification >= config.CRITIC_CUTOFF
                         and not matching.early_seniority_conflict(profile, jobs_by_id[j.job_id])]
             ranked.update({j.job_id: j for j in eligible})
+            eligible_jobs.update({item.job_id: jobs_by_id[item.job_id] for item in eligible})
+            ordered = _rank_jobs(list(ranked.values()), eligible_jobs, profile, preferences)
             qualification_judgements = [Judgement(j.job_id, j.breakdown.qualification, j.reason) for j in eligible]
             advice = critic.feedback(profile, qualification_judgements)
-            if advice is None and len(ranked) < config.TOP_K:
+            if advice is None and len(ordered) < config.TOP_K:
                 advice = "Fewer than five suitable jobs found; search for additional roles and skills."
         else:
             ranked.update({job.job_id: Judgement(job.job_id, 0, "Retrieved by search; not scored.") for job in jobs})
+            ordered = list(ranked.values())
             advice = None
-        round_rankings.append([j.job_id for j in sorted(ranked.values(), key=_rank_key, reverse=True)[:config.TOP_K]])
+        round_rankings.append([j.job_id for j in ordered[:config.TOP_K]])
         if advice is None or round_number + 1 == config.MAX_SEARCH_ROUNDS:
             break
         if memory.use_episodic:
@@ -138,8 +181,7 @@ def run(resume_text: str, use_critic: bool = True, use_episodic: bool = True,
                 memory.episodic.rejected[job.job_id] = f"{job.title[:100]}: {failure}"
         retries += 1
     report(phase="done")
-    return Result(profile, sorted(ranked.values(), key=_rank_key, reverse=True)[:config.TOP_K],
-                  memory.short_term, retries, round_rankings)
+    return Result(profile, ordered[:config.TOP_K], memory.short_term, retries, round_rankings)
 
 
 def cover_letter(profile: Profile, job_id: str, progress=None) -> str:

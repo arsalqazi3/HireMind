@@ -39,6 +39,21 @@ To rebuild the sheets, run `python -m scripts.make_relevance_sheet`. It is seede
 
 ## Review actual top-five results
 
+To score an existing local AI review checkpoint without loading the reviewer,
+run `python -m scripts.review_saved_rankings validation --score-only` or use
+`historical` for the A–E study. The command writes `summary.json` beside the
+checkpoint with coverage, precision bounds and paired metrics. Coverage reflects
+the snapshot at scoring time. Independent human judgments use the separate
+workbook workflow below.
+
+To generate or resume AI judgments, run the same command without `--score-only`
+while `qwen3:8b` is available on the local Ollama server. The runner uses the
+saved blind rows when they exist, or rebuilds them from the frozen ranking
+snapshot and local catalogue. It saves progress after each résumé. Each row in
+`labels.csv` identifies a résumé and a posting by their IDs. It records `1` for
+a plausible fit, `0` for a weak or unsuitable match, and leaves decisive
+uncertainty blank. Review notes and source text stay in local outputs.
+
 The ablation runner can export a separate blind packet from saved rankings.
 The packet combines each system's top five and the first matching round where
 available, removes duplicates and shuffles job order. Its Markdown files
@@ -77,7 +92,9 @@ python -m evaluation.calibrate --snapshot outputs/retrieval_validation_all.json 
 ```
 
 Reconciliation writes a consensus CSV, a list of missing or conflicting
-decisions, and ranking metrics at the current coverage. Ask the original
+decisions, ranking metrics at the current coverage, and agreement before
+adjudication. Agreement and Cohen's kappa use the pairs with two votes.
+Ask the original
 reviewer to complete missing votes. For conflicts, record the final human
 decision in a CSV with `resume_id`, `job_id` and `relevant`, then rerun
 reconciliation with `--adjudicated` and a new output directory. Blank or
@@ -108,3 +125,17 @@ format. The comparison reports the top-five precision change on the
 shared, fully judged résumé cohort and a paired 95% bootstrap interval.
 Each resampled unit is an entire résumé. Small or incomplete batches
 provide preliminary evidence. [Paired retrieval evaluation research](https://maroo.cs.umass.edu/getpdf.php?id=885)
+
+### Report the hand-checked test cohorts
+
+Use the consensus CSV from the held-out workbooks with the checked category
+manifest. The score command reports coverage, precision at five, reciprocal
+rank, pooled NDCG, result counts and latency for each cohort. The compare
+command estimates the paired precision change against FAISS.
+
+```bash
+python -m evaluation.ablation score outputs/ablation_test_joint.json \
+  outputs/test-review-results/consensus.csv --checked-labels evaluation/labels/test_categories.csv
+python -m evaluation.ablation compare outputs/ablation_test_joint.json \
+  outputs/test-review-results/consensus.csv --checked-labels evaluation/labels/test_categories.csv --baseline A
+```
