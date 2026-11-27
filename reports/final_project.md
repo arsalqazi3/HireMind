@@ -28,9 +28,9 @@ The separate step-800 study compared the base and Colab checkpoints on shared co
 | Expected Searcher tool on rule-labelled validation prompts | 15/40 | 34/40 |
 | Critic MAE among valid responses | 2.831 | 0.052 |
 | Validation résumés with five results | 40/40 | 33/40 |
-| Precision@5 bounds from pooled validation AI review | 0.545–0.620 | 0.435–0.515 |
+| Precision@5 bounds on pooled validation rankings | 0.530–0.615 | 0.420–0.510 |
 
-The local reviewer gave determinate judgments to 340 of 370 validation pairs. On the 16 résumés with complete pooled judgments, step 800 changed precision@5 by −0.063, with a paired 95% interval of −0.200 to +0.100. Step 800 improved agreement with the component rules and missed the five-result coverage criterion. The base model remains the demo default. Independent ranking judgments are still pending. The [evaluation report](evaluation_2026-11-18.md) records the full methods, ablations, latency and failure cases.
+We generated relevance judgments with local Qwen3-8B and checked eight pairs against the source texts. After those checks, 336 of 370 pairs had determinate judgments. On the 15 résumés with complete pooled judgments, step 800 changed precision@5 by −0.067, with a paired 95% interval of −0.213 to +0.093. Step 800 improved agreement with the component rules and missed the five-result coverage criterion. The base model remains the demo default. The [evaluation report](evaluation_2026-11-18.md) records the full methods, ablations, latency and failure cases.
 
 ## Deliverables
 
