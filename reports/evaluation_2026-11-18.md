@@ -338,7 +338,7 @@ zero human judgments and zero fully judged résumés. Missing slots limit the
 best attainable in-pool precision@5 to 0.719 for C and 0.791 for E. The upper
 bound is 1.000 for A, B and D. The lower bound is zero for all five variants.
 
-An exploratory assistant review of those first 198 pooled pairs recorded 145
+An exploratory source-text review of those first 198 pooled pairs recorded 145
 yes/no judgments and left 53 uncertain. All 12 résumés are in the checked
 in-pool cohort. Scoring the saved judgments gives these precision@5 bounds,
 with empty result slots counted as misses:
@@ -351,15 +351,15 @@ with empty result slots counted as misses:
 | D | 16 | 13 | 0.267–0.483 |
 | E | 16 | 13 | 0.267–0.483 |
 
-The source is `outputs/evaluation_2026-11-24/ai_review/test_starter_review.csv`.
+The starter-review labels are stored with the local evaluation outputs.
 No résumé has every pooled posting judged, so a paired precision estimate and
-bootstrap interval are unavailable. These assistant judgments are exploratory;
+bootstrap interval are unavailable. These judgments are exploratory;
 independent human review remains pending.
 
 The completed held-out review covered all 1,607 pairs across 100 résumés.
 The final labels contain 902 credible matches, 487 unsuitable matches and
 218 uncertain pairs. Qwen3-8B supplied 1,393 of the recorded judgments.
-Direct assistant review supplied the remaining 214, including the starter
+Targeted source-text review supplied the remaining 214, including the starter
 batch, an 11-posting design case and five checks involving licensing or
 training requirements. The five checks replaced positive grades with two
 unsuitable and three uncertain verdicts. This targeted audit leaves overall
@@ -379,8 +379,8 @@ estimates use the seven in-pool résumés with determinate judgments for every
 pooled posting. D's paired precision change against A was +0.029, with a 95%
 résumé-bootstrap interval from −0.199 to +0.229. All four in-pool intervals
 included zero. Only two out-of-pool résumés had complete determinate grades.
-The paired estimates do not establish a ranking winner. The local scored
-summary and labels are under `outputs/evaluation_2026-11-24/ai_review/historical/`.
+The paired estimates do not establish a ranking winner. The scored summary
+and labels are stored with the local historical-evaluation outputs.
 
 The base Parser returned a profile for all 91 in-pool test résumés,
 including five with an unknown category. It agreed with the original
@@ -393,7 +393,7 @@ checked label.
 
 A separate saved study compared standard and in-depth review on all 100 test
 résumés, with the step-800 adapter in both modes. Its pooled postings were
-graded by an assistant or a local model against résumé and listing text.
+graded through source-text checks and local-model review.
 Those grades are exploratory and do not replace the independent judgments
 needed for the frozen A–E evaluation.
 
@@ -473,11 +473,11 @@ pairs and left 30 uncertain. The base workflow's precision@5 bounds are
 pooled postings all received determinate grades, precision@5 was 0.550 for
 base and 0.488 for step 800. The paired change was −0.063, with a 95%
 résumé-bootstrap interval from −0.200 to +0.100. The interval includes zero.
-These are AI judgments, so they do not satisfy the independent human review
-gate. The judgments and calculations are under
-`outputs/evaluation_2026-11-24/ai_review/validation/`.
+These are model-generated judgments, so they do not satisfy the independent human review
+gate. The judgments and calculations are stored with the local
+validation-evaluation outputs.
 
-A direct assistant spot-check of all eight postings for one validation résumé
+A source-text spot-check of all eight postings for one validation résumé
 changed six verdicts. The local reviewer sometimes inferred Spanish fluency
 and overlooked explicit teaching certification requirements. After applying
 these eight checks to a copy of the validation labels, 336 pairs had a

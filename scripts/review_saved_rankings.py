@@ -1,4 +1,4 @@
-"""Resume AI review of saved blind ranking packets with the local reviewer."""
+"""Resume automated review of saved blind ranking packets with the local reviewer."""
 
 import argparse
 import csv

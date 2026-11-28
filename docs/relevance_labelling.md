@@ -39,14 +39,14 @@ To rebuild the sheets, run `python -m scripts.make_relevance_sheet`. It is seede
 
 ## Review actual top-five results
 
-To score an existing local AI review checkpoint without loading the reviewer,
+To score an existing local review checkpoint without loading the reviewer,
 run `python -m scripts.review_saved_rankings validation --score-only` or use
 `historical` for the A–E study. The command writes `summary.json` beside the
 checkpoint with coverage, precision bounds and paired metrics. Coverage reflects
 the snapshot at scoring time. Independent human judgments use the separate
 workbook workflow below.
 
-To generate or resume AI judgments, run the same command without `--score-only`
+To generate or resume model-based judgments, run the same command without `--score-only`
 while `qwen3:8b` is available on the local Ollama server. The runner uses the
 saved blind rows when they exist, or rebuilds them from the frozen ranking
 snapshot and local catalogue. It saves progress after each résumé. Each row in

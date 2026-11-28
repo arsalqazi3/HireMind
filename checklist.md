@@ -145,7 +145,7 @@ Updated after every finished task. Steps follow the proposal (`HireMind_Proposal
 - [x] Completed the paired 40-résumé validation ranking run. Base returned five jobs for 40 résumés versus 33 for step 800, so base remains the demo checkpoint.
 - [ ] Obtain and reconcile independent relevance judgments for the 370 validation ranking pairs.
 - [ ] Obtain independent human judgments for the 1,607 held-out A–E pairs.
-- [x] Review and score all 1,607 held-out A–E pairs with Qwen3-8B and direct assistant checks. The final set contains 1,389 determinate and 218 uncertain judgments. The evaluation report records bounds and paired comparisons.
+- [x] Review and score all 1,607 held-out A–E pairs with Qwen3-8B and targeted source-text checks. The final set contains 1,389 determinate and 218 uncertain judgments. The evaluation report records bounds and paired comparisons.
 - [x] Recorded CPU time, memory, model size, retries and cover-letter regression checks in the evaluation report
 - [x] Drafted the [evaluation report](reports/evaluation_2026-11-18.md) with completed run results
 - [x] Add the completed assisted ranking metrics to the final report.
